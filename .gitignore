@@ -1,0 +1,9 @@
+*.egg-info*
+__pycache__
+dist*
+credentials
+_version.py
+.coverage
+coverage/
+coverage.xml
+.pytest_cache

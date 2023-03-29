@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=67.0", "setuptools_scm[toml]>=7.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "circlecigen"
+dynamic = ["version"]
+authors = [
+  { name="Nic Cheneweth", email="nchenewe@thoughtworks.com" },
+]
+description = "Opinionated generation of continuation pipelines"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[tool.setuptools_scm]
+write_to = "src/_version.py"
+
+[project.urls]
+"Homepage" = "https://github.com/ThoughtWorks-DPS/circlecigen"
+"Bug Tracker" = "https://github.com/ThoughtWorks-DPS/circlecigen/issues"

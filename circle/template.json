@@ -1,0 +1,42 @@
+{
+  "filters": "{{filters}}",
+  "pre": {
+    "job": "terraform/plan",
+    "parameters": {
+      "name": "{{env_instance}} change plan",
+      "context": "<< pipeline.parameters.context >>",
+      "workspace": "{{env_instance}}",
+      "var-file": "{{env_instance}}.tfvars.json",
+      "before-terraform": [
+        " set-environment"
+      ]
+    }
+  },
+  "approve": true,
+  "post": {
+    "job": "terraform/apply",
+    "parameters": {
+      "name": "apply {{env_instance}} change plan",
+      "context": "<< pipeline.parameters.context >>",
+      "workspace": "{{env_instance}}",
+      "var-file": "{{env_instance}}.tfvars.json",
+      "before-terraform": [
+        "set-environment"
+      ],
+      "after-terraform": [
+        {
+          "store-system-credentials": {
+            "region": "{{env_instance}}"
+          }
+        },
+        {
+          "create-storage-class": {
+            "region-file": "{{env_instance}}",
+            "workspace": "{{env_instance}}"
+          }
+        }
+      ],
+      "requires": null
+    }
+  }
+}
