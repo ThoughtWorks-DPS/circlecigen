@@ -1,7 +1,7 @@
 import click
 from pathvalidate.click import validate_filename_arg, validate_filepath_arg
 from tfvars import write_tfvar_files
-from utils import read_json_file
+from utils import read_json_file, validate_filepath
 from template import write_generated_config
 
 
@@ -37,6 +37,8 @@ def cli(outfile, envpath, multifile, defaultparams, tfvars, workflow, pipepath):
 
         [for each instance].tfvars.json
     """
+    validate_filepath(envpath, "envpath")
+    validate_filepath(pipepath, "pipepath")
     result = write_tfvar_files(envpath, read_json_file(envpath, multifile), read_json_file(envpath, defaultparams)) if tfvars else click.echo("Not generating tfvars.json files")
     click.echo(result)
     write_generated_config(pipepath, outfile, envpath, multifile, workflow)

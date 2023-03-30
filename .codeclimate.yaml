@@ -1,0 +1,17 @@
+version: "2" 
+plugins:
+  bandit:
+    enabled: true
+  radon:
+    enabled: true
+  sonarpython:
+    enabled: true
+exclude_patterns:
+  - ".circleci/"
+  - ".gitignore"
+  - ".pylintrc"
+  - ".python-version"
+  - "LICENSE"
+  - "Pipfile"
+  - "Pipfile.lock"
+  - "README.md"

@@ -1,4 +1,6 @@
 import json
+import os
+import click
 
 def read_json_file(filepath, filename):
     """load multi-environment definition file"""
@@ -14,3 +16,12 @@ def merge(*dict_args):
     for dictionary in dict_args:
         result.update(dictionary)
     return result
+
+def write_json_file(file, contents):
+    with open(file, 'w', encoding="utf-8") as f:
+        json.dump(contents, f, indent=2)
+
+def validate_filepath(filepath, flag):
+    """Validate filepath exists"""
+    if not os.path.exists(filepath):
+        raise click.UsageError(f"Invalid {flag} provided: {filepath}")

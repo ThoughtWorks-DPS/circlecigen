@@ -1,6 +1,6 @@
 from os.path import isfile
 import json
-from utils import read_json_file, merge
+from utils import read_json_file, merge, write_json_file
 
 def write_tfvar_files(envpath, environs, defaultparams):
     """create and write instance.tfvars.json files for each multi-env instance"""
@@ -29,8 +29,6 @@ def write_tfvar_files(envpath, environs, defaultparams):
 
             # set the env_instance to the current instance
             instance_vars["env_instance"] = instance
-            with open(f"{envpath}/{instance}.tfvars.json", 'w', encoding="utf-8") as f:
-              json.dump(instance_vars, f, indent=2)
+            write_json_file(f"{envpath}/{instance}.tfvars.json", instance_vars)
             files_generated += 1
-
     return f"{files_generated} tfvars created in {envpath}/"
