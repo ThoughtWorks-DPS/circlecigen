@@ -1,6 +1,5 @@
 from os.path import isfile
 from jinja2 import Environment, FileSystemLoader
-import click
 from utils import read_json_file
 
 APPROVE_TEMPLATE = """      - approve {{role}} changes:
@@ -24,10 +23,8 @@ PRIOR_APPROVAL = """
             - approve {} changes
 """
 
-def write_generated_config(pipepath, outfile, envpath, multifile, workflow):
+def write_generated_config(pipepath, outfile, envpath, environs, workflow):
     """create generated_config.yaml for continuation orb"""
-    environs = read_json_file(envpath, multifile)
-    jobfilter = environs["filter"]
 
     # copy everything but the jobs and workflows from config.yml into generated_config.yml
     setup_generated_config_outfile(pipepath, outfile, workflow)
@@ -38,10 +35,10 @@ def write_generated_config(pipepath, outfile, envpath, multifile, workflow):
 
     # setup Dict for the approval job template 
     approve_vars = {}
-    approve_vars["filter"] = jobfilter
+    approve_vars["filter"] = environs["filter"]
 
     # all pre-approval jobs created accept for the first role must wait for the prior role approval
-    # set this blank to start then populate with each complete role
+    # set this as blank to start then populate with the list of all instance plans jobs in the role
     priorapprovalrequired = ""
 
     # open the outfile for appeand and start processing roles/instances
@@ -58,20 +55,24 @@ def write_generated_config(pipepath, outfile, envpath, multifile, workflow):
             # generate a pre-approval job for each instance in the role, if a pre-approval.yml file exists
             if pre:
                 for instance in environs[role]:
-                    # fetch the assoicated tfvar file or error
-                    if isfile(f"{envpath}/{instance}.tfvars.json"):
-                        instance_vars=read_json_file(envpath, f"{instance}.tfvars.json")
-                        # additional values available to template
-                        instance_vars["filters"] = jobfilter
-                        instance_vars["role"] = role
-                        instance_vars["envpath"] = envpath
-                        # include the 'requires:' information after the first role
-                        instance_vars["priorapprovalrequired"] = PRIOR_APPROVAL.format(priorapprovalrequired) if priorapprovalrequired else ""
-                        # build the list of required jobs for the approval template
-                        approvalrequiredjobs += f"\n            - {instance} change plan"
-                    else:
-                        raise click.UsageError(f"{envpath}/{instance}.tfvars.json not found")
-                    # write the instance pre- template to the outfile
+                    # fetch the assoicated tfvar file
+                    instance_vars=read_json_file(envpath, f"{instance}.tfvars.json")
+
+                    # additional values available to template
+                    instance_vars.update({
+                            "filters": environs["filter"],
+                            "role": role,
+                            "envpath": envpath
+                    })
+                    # include the 'requires:' information for all roles except the first
+                    if priorapprovalrequired:
+                        instance_vars.update({
+                            "priorapprovalrequired": PRIOR_APPROVAL.format(priorapprovalrequired)
+                        })
+                    # Add this instance plan job name to the list of required jobs for the approval template
+                    approvalrequiredjobs += f"\n            - {instance} change plan"
+
+                    # write the formatted instance pre-approval template to generated_config.yml
                     f.write(pre.render(instance_vars))
 
             # generate approval job for the current role, a hunman will trigger the post- phase
@@ -83,17 +84,19 @@ def write_generated_config(pipepath, outfile, envpath, multifile, workflow):
             if post:
                 for instance in environs[role]:
                     # fetch the assoicated tfvar file or error
-                    if isfile(f"{envpath}/{instance}.tfvars.json"):
-                        instance_vars=read_json_file(envpath, f"{instance}.tfvars.json")
-                        # additional values available to template
-                        instance_vars["filters"] = jobfilter
-                        instance_vars["role"] = role
-                        instance_vars["envpath"] = envpath
-                    else:
-                        raise click.UsageError(f"{envpath}/{instance}.tfvars.json not found")
+                    instance_vars=read_json_file(envpath, f"{instance}.tfvars.json")
+
+                    # additional values available to template
+                    instance_vars.update({
+                            "filters": environs["filter"],
+                            "role": role,
+                            "envpath": envpath
+                    })
+
                     # write the instance post- template to the outfile
                     f.write(post.render(instance_vars))
-            # record the current role, to enable 'requires' info in subsequent pre- jobs
+
+            # record the current role, to provide 'requires:' list in any subsequent pre- jobs
             priorapprovalrequired = role
 
 def get_templates(je, pipepath):

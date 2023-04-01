@@ -4,7 +4,6 @@ from tfvars import generate_environment_tfvar_files
 from utils import read_json_file, validate_filepath
 from template import write_generated_config
 
-
 @click.version_option()
 @click.command()
 @click.option("--outfile", default="generated_config.yml", help="Generated file. Default is generated_config.yml", callback=validate_filename_arg)
@@ -41,4 +40,4 @@ def cli(outfile, envpath, multifile, defaultparams, tfvars, workflow, pipepath):
     validate_filepath(pipepath, "pipepath")
     result = generate_environment_tfvar_files(envpath, read_json_file(envpath, multifile), read_json_file(envpath, defaultparams)) if tfvars else click.echo("Not generating tfvars.json files")
     click.echo(f"{result} tfvars created in {envpath}/")
-    write_generated_config(pipepath, outfile, envpath, multifile, workflow)
+    write_generated_config(pipepath, outfile, envpath, read_json_file(envpath, multifile), workflow)

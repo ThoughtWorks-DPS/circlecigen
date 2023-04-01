@@ -28,9 +28,9 @@ def test_write_generated_config():
     pipepath = "env_test"
     envpath = "env_test"
     outfile = "generated_config.yml"
-    multifile = "multi.json"
+    environs = {"filter": "*on-push-main", "qa": {"qa-us-west-2": {"aws_region": "us-west-2"}, "qa-us-east-2": {"aws_region": "us-east-2"}}, "preview": {"preview-us-east-2": {"aws_region": "us-east-2"}, "preview-us-west-2": {"aws_region": "us-west-2"}}}
     workflow = workflow = "continuation-generated-workflow"
 
-    write_generated_config(pipepath, outfile, envpath, multifile, workflow)
+    write_generated_config(pipepath, outfile, envpath, environs, workflow)
     assert os.path.isfile(os.path.join(pipepath, outfile))
     assert filecmp.cmp(os.path.join(pipepath, outfile), os.path.join("test", outfile))
