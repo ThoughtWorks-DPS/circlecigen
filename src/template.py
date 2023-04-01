@@ -23,14 +23,14 @@ PRIOR_APPROVAL = """
             - approve {} changes
 """
 
-def write_generated_config(pipepath, outfile, envpath, environs, workflow):
+def generate_config(pipepath, outfile, envpath, environs, workflow):
     """create generated_config.yaml for continuation orb"""
 
     # copy everything but the jobs and workflows from config.yml into generated_config.yml
     setup_generated_config_outfile(pipepath, outfile, workflow)
 
     # setup the jinja templates
-    je = Environment(loader=FileSystemLoader(f"{pipepath}/"))
+    je = Environment(loader=FileSystemLoader(f"{pipepath}/"), autoescape=True)
     pre, approve, post = get_templates(je, pipepath)
 
     # setup Dict for the approval job template 
@@ -48,11 +48,13 @@ def write_generated_config(pipepath, outfile, envpath, environs, workflow):
             if role == "filter":
                 continue
 
-            # when the approval template is generate, it must be populated with a list of all instances for which
-            # a pre-approval template is generated. Setup a string for this config
+            # when the approval template is generate, it must be populated with a list of
+            # all instances for which a pre-approval template is generated.
+            # Setup a string for this config.
             approvalrequiredjobs = "requires:"
 
-            # generate a pre-approval job for each instance in the role, if a pre-approval.yml file exists
+            # generate a pre-approval job for each instance in the role,
+            # if a pre-approval.yml file exists
             if pre:
                 for instance in environs[role]:
                     # fetch the assoicated tfvar file
@@ -69,18 +71,21 @@ def write_generated_config(pipepath, outfile, envpath, environs, workflow):
                         instance_vars.update({
                             "priorapprovalrequired": PRIOR_APPROVAL.format(priorapprovalrequired)
                         })
-                    # Add this instance plan job name to the list of required jobs for the approval template
+                    # Add this plan job name to the list of required jobs for the approval template
                     approvalrequiredjobs += f"\n            - {instance} change plan"
 
                     # write the formatted instance pre-approval template to generated_config.yml
                     f.write(pre.render(instance_vars))
 
-            # generate approval job for the current role, a hunman will trigger the post- phase
-            approve_vars["role"] = role
-            approve_vars["approvalrequiredjobs"] = approvalrequiredjobs if approvalrequiredjobs != "requires:" else ""
+            # generate approval job for the current role, a human will trigger the post- phase
+            approve_vars.update ({
+                    "role": role,
+                    "approvalrequiredjobs": approvalrequiredjobs
+                    })
             f.write(approve.render(approve_vars))
 
-             # generate a post-approval job for each instance in the role, if a post-approval.yml file exists
+             # generate a post-approval job for each instance in the role,
+             # if a post-approval.yml file exists
             if post:
                 for instance in environs[role]:
                     # fetch the assoicated tfvar file or error
