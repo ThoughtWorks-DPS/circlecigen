@@ -2,7 +2,7 @@ from os.path import isfile
 from jinja2 import Environment, FileSystemLoader
 from utils import read_json_file
 
-APPROVE_TEMPLATE = """      - approve {{role}} changes:
+APPROVE_TEMPLATE="""      - approve {{role}} changes:
           type: approval
           {{approvalrequiredjobs}}
           filters: {{filter}}
@@ -18,7 +18,7 @@ workflows:
     jobs:
 """
 
-PRIOR_APPROVAL = """
+PRIOR_APPROVAL="""
           requires:
             - approve {} changes
 """
@@ -37,8 +37,9 @@ def generate_config(pipepath, outfile, envpath, environs, workflow):
     approve_vars = {}
     approve_vars["filter"] = environs["filter"]
 
-    # all pre-approval jobs created accept for the first role must wait for the prior role approval
-    # set this as blank to start then populate with the list of all instance plans jobs in the role
+    # all pre-approval jobs created accept for the first role must wait for
+    # the prior role approval set this as blank to start then populate
+    # with the list of all instance plans jobs in the role
     priorapprovalrequired = ""
 
     # open the outfile for appeand and start processing roles/instances
@@ -48,9 +49,9 @@ def generate_config(pipepath, outfile, envpath, environs, workflow):
             if role == "filter":
                 continue
 
-            # when the approval template is generate, it must be populated with a list of
-            # all instances for which a pre-approval template is generated.
-            # Setup a string for this config.
+            # when the approval template is generate, it must be populated with
+            # a list of all instances for which a pre-approval template is
+            # generated. Setup a string for this config.
             approvalrequiredjobs = "requires:"
 
             # generate a pre-approval job for each instance in the role,
@@ -58,7 +59,8 @@ def generate_config(pipepath, outfile, envpath, environs, workflow):
             if pre:
                 for instance in environs[role]:
                     # fetch the assoicated tfvar file
-                    instance_vars=read_json_file(envpath, f"{instance}.tfvars.json")
+                    instance_vars=read_json_file(envpath,
+                                                 f"{instance}.tfvars.json")
 
                     # additional values available to template
                     instance_vars.update({
@@ -66,7 +68,8 @@ def generate_config(pipepath, outfile, envpath, environs, workflow):
                             "role": role,
                             "envpath": envpath
                     })
-                    # include the 'requires:' information for all roles except the first
+                    # include the 'requires:' information for all roles except
+                    # the first
                     if priorapprovalrequired:
                         instance_vars.update({
                             "priorapprovalrequired": PRIOR_APPROVAL.format(priorapprovalrequired)
