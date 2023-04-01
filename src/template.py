@@ -78,6 +78,7 @@ def generate_pre_approval_jobs(f, envpath, pre, environs, role, priorapprovalreq
             approvalrequiredjobs += f"\n            - {instance} change plan"
             f.write(pre.render(instance_vars))
         return approvalrequiredjobs
+    return None
 
 def generate_approval_jobs(f, approve, approve_vars, approvalrequiredjobs, role):
     approve_vars.update ({
