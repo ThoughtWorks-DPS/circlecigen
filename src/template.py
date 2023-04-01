@@ -49,42 +49,35 @@ def generate_config(pipepath, outfile, envpath, environs, workflow):
             # skip the filter definition
             if role == "filter":
                 continue
-
-            # generate a pre-approval job for each instance in the role,
-            # if a pre-approval.yml file exists
-            if pre:
-                # when the approval template is generate, it must be populated with
-                # a list of all instances for which a pre-approval template is
-                # generated. That is returned by this job.
-                approvalrequiredjobs =  generate_pre_approval_jobs(f, envpath, pre, environs, role, priorapprovalrequired)
-
+            # when the approval template is generate, it must be populated with
+            # a list of all instances for which a pre-approval template is
+            # generated. That is returned by this job.
+            approvalrequiredjobs =  generate_pre_approval_jobs(f, envpath, pre, environs, role, priorapprovalrequired)
             # generate approval job for the current role, a human will trigger the post- phase
             generate_approval_jobs(f, approve, approve_vars, approvalrequiredjobs, role)
-
-            # generate a post-approval job for each instance in the role,
-            # if a post-approval.yml file exists
-            if post:
-                generate_post_approval_jobs(f, envpath, post, environs, role)
-
+            generate_post_approval_jobs(f, envpath, post, environs, role)
             # record the current role, to provide 'requires:' list in any subsequent pre- jobs
             priorapprovalrequired = role
 
 def generate_pre_approval_jobs(f, envpath, pre, environs, role, priorapprovalrequired):
-    approvalrequiredjobs = "requires:"
-    for instance in environs[role]:
-        instance_vars=read_json_file(envpath, f"{instance}.tfvars.json")
-        instance_vars.update({
-            "filters": environs["filter"],
-            "role": role,
-            "envpath": envpath
-        })
-        if priorapprovalrequired:
+    # generate a pre-approval job for each instance in the role,
+    # if a pre-approval.yml file exists
+    if pre:
+        approvalrequiredjobs = "requires:"
+        for instance in environs[role]:
+            instance_vars=read_json_file(envpath, f"{instance}.tfvars.json")
             instance_vars.update({
-                "priorapprovalrequired": PRIOR_APPROVAL.format(priorapprovalrequired)
+                "filters": environs["filter"],
+                "role": role,
+                "envpath": envpath
             })
-        approvalrequiredjobs += f"\n            - {instance} change plan"
-        f.write(pre.render(instance_vars))
-    return approvalrequiredjobs
+            if priorapprovalrequired:
+                instance_vars.update({
+                    "priorapprovalrequired": PRIOR_APPROVAL.format(priorapprovalrequired)
+                })
+            approvalrequiredjobs += f"\n            - {instance} change plan"
+            f.write(pre.render(instance_vars))
+        return approvalrequiredjobs
 
 def generate_approval_jobs(f, approve, approve_vars, approvalrequiredjobs, role):
     approve_vars.update ({
@@ -94,14 +87,17 @@ def generate_approval_jobs(f, approve, approve_vars, approvalrequiredjobs, role)
     f.write(approve.render(approve_vars))
 
 def generate_post_approval_jobs(f, envpath, post, environs, role):
-    for instance in environs[role]:
-        instance_vars=read_json_file(envpath, f"{instance}.tfvars.json")
-        instance_vars.update({
-            "filters": environs["filter"],
-            "role": role,
-            "envpath": envpath
-        })
-        f.write(post.render(instance_vars))
+    # generate a post-approval job for each instance in the role,
+    # if a post-approval.yml file exists
+    if post:
+        for instance in environs[role]:
+            instance_vars=read_json_file(envpath, f"{instance}.tfvars.json")
+            instance_vars.update({
+                "filters": environs["filter"],
+                "role": role,
+                "envpath": envpath
+            })
+            f.write(post.render(instance_vars))
 
 def get_templates(je, pipepath):
     """setup the jinja templates"""
@@ -111,12 +107,24 @@ def get_templates(je, pipepath):
     return pre, approve, post
 
 def generate_config_lines(pipepath):
-    with open(f"{pipepath}/config.yml", encoding="utf-8") as f:
-        for line in f:
-            if line.startswith("jobs:") or line.startswith("workflows:"):
-                break
-            if not line.startswith("setup:"):
+    """Read config.yml and yield lines that don't start with 'setup:' until it encounters a line starting with 'jobs:' or 'workflows:'"""
+    config_file = f"{pipepath}/config.yml"
+    with open(config_file, encoding="utf-8") as f:
+        for line in _read_until_jobs_or_workflows(f):
+            if not _line_starts_with_setup(line):
                 yield line
+
+
+def _read_until_jobs_or_workflows(f):
+    """Generator that reads lines from file object f until it encounters a line starting with 'jobs:' or 'workflows:'"""
+    for line in f:
+        if line.startswith("jobs:") or line.startswith("workflows:"):
+            break
+        yield line
+
+def _line_starts_with_setup(line):
+    """Return True if the given line starts with 'setup:', False otherwise"""
+    return line.startswith("setup:")
 
 def setup_generated_config_outfile(pipepath, outfile, workflow):
     """read .circleci/config.yml and write everything up to jobs: or workflows: into the outfile"""
