@@ -103,14 +103,17 @@ def get_templates(je, pipepath):
     approve = je.from_string(APPROVE_TEMPLATE)
     return pre, approve, post
 
-def setup_generated_config_outfile(pipepath, outfile, workflow):
-    """read .circleci/config.yml and write everthing up to jobs: or workflows: into the outfile"""
-    # pylint: disable=consider-using-with
-    with open(f"{pipepath}/{outfile}", 'w', encoding="utf-8") as f:
-        for line in open(f"{pipepath}/config.yml", encoding="utf-8"):
-            if line.startswith("setup:"):
-                continue
+def generate_config_lines(pipepath):
+    with open(f"{pipepath}/config.yml", encoding="utf-8") as f:
+        for line in f:
             if line.startswith("jobs:") or line.startswith("workflows:"):
                 break
+            if not line.startswith("setup:"):
+                yield line
+
+def setup_generated_config_outfile(pipepath, outfile, workflow):
+    """read .circleci/config.yml and write everything up to jobs: or workflows: into the outfile"""
+    with open(f"{pipepath}/{outfile}", 'w', encoding="utf-8") as f:
+        for line in generate_config_lines(pipepath):
             f.write(line)
         f.write(WORKFLOW_HEADING.format(workflow))

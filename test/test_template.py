@@ -1,4 +1,5 @@
-import os, filecmp
+import os
+import filecmp
 from jinja2 import Environment, FileSystemLoader, Template
 from template import setup_generated_config_outfile, get_templates, write_generated_config
 

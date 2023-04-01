@@ -1,4 +1,7 @@
-version: "2" 
+version: "2"
+argument-count:
+    config:
+      threshold: 7
 plugins:
   bandit:
     enabled: true

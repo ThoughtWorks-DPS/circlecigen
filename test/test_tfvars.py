@@ -1,15 +1,19 @@
 import os
 import filecmp
-import glob
-from tfvars import write_tfvar_files
+from tfvars import nummber_of_files_to_generate, generate_environment_tfvar_files
+
+def test_nummber_of_files_to_generate():
+    environs = {"filter": "*on-push-main", "qa": {"qa-us-west-2": {"aws_region": "us-west-2"}, "qa-us-east-2": {"aws_region": "us-east-2"}}, "preview": {"preview-us-east-2": {"aws_region": "us-east-2"}, "preview-us-west-2": {"aws_region": "us-west-2"}}}
+    result = nummber_of_files_to_generate(environs)
+    assert result == 4
 
 # this is ugly, see notes below
-def test_write_tfvars_files():
+def test_generate_environment_tfvar_files():
     envpath = "env_test"
     environs = {"filter": "*on-push-main", "qa": {"qa-us-west-2": {"aws_region": "us-west-2"}, "qa-us-east-2": {"aws_region": "us-east-2"}}, "preview": {"preview-us-east-2": {"aws_region": "us-east-2"}, "preview-us-west-2": {"aws_region": "us-west-2"}}}
     defaultparams = {"env_instance": "default-env-instance", "aws_region": "default-region", "aws_account_id": "default-account-id"}
 
-    result = write_tfvar_files(envpath, environs, defaultparams)
+    result = generate_environment_tfvar_files(envpath, environs, defaultparams)
     assert os.path.isfile(os.path.join(envpath, "qa-us-west-2.tfvars.json"))
     assert os.path.isfile(os.path.join(envpath, "qa-us-east-2.tfvars.json"))
     assert os.path.isfile(os.path.join(envpath, "preview-us-west-2.tfvars.json"))
@@ -18,7 +22,7 @@ def test_write_tfvars_files():
     assert filecmp.cmp(os.path.join(envpath, "qa-us-east-2.tfvars.json"), os.path.join("test", "qa-us-east-2.tfvars.json"))
     assert filecmp.cmp(os.path.join(envpath, "preview-us-west-2.tfvars.json"), os.path.join("test", "preview-us-west-2.tfvars.json"))
     assert filecmp.cmp(os.path.join(envpath, "preview-us-east-2.tfvars.json"), os.path.join("test", "preview-us-east-2.tfvars.json"))
-    assert result == f"4 tfvars created in {envpath}/"
+    
 
 # tried various unittest.mock strategies to avoid writing anything, a coupel below
 # but haven't yet figured it out. Thie one for example fails and then in the messages has the

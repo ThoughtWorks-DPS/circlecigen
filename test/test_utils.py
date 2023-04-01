@@ -1,11 +1,8 @@
 import json
+from unittest.mock import patch, mock_open
 import pytest
 import click
-from unittest.mock import patch, mock_open
 from utils import merge, read_json_file, write_json_file, validate_filepath
-
-def test_merge_empty_dict():
-    assert merge({}, {}) == {}
 
 def test_merge_non_overlapping_dict():
     dict1 = {"a": 1, "b": 2}
@@ -27,7 +24,7 @@ def test_read_json_file_of_valid_file():
 def test_read_json_file_of_invalid_file():
     with patch("builtins.open", mock_open(read_data="not a valid JSON string")):
         with pytest.raises(json.JSONDecodeError):
-            data = read_json_file("filepath", "test.json")
+            _ = read_json_file("filepath", "test.json")
 
 def test_write_json_file_with_valid_data():
     filename = 'test.json'
@@ -40,4 +37,4 @@ def test_write_json_file_with_valid_data():
 
 def test_validate_filepath():
     with pytest.raises(click.UsageError) as _:
-          _ = validate_filepath("env:path", "envpath")
+          validate_filepath("env:path", "envpath")

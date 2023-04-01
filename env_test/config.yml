@@ -1,6 +1,8 @@
 ---
 version: 2.1
 
+setup: true 
+
 orbs:
   terraform: twdps/terraform@0.6.0
 

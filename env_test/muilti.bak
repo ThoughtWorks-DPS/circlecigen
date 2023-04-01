@@ -1,0 +1,19 @@
+{
+  "filter": "*on-push-main",
+  "qa": {
+    "qa-us-west-2": {
+      "aws_region": "us-west-2"
+    },
+    "qa-us-east-2": {
+      "aws_region": "us-east-2"
+    }
+  },
+  "preview": {
+    "preview-us-east-2": {
+      "aws_region": "us-east-2"
+    },
+    "preview-us-west-2": {
+      "aws_region": "us-west-2"
+    }
+  }
+}

@@ -7,3 +7,4 @@ _version.py
 coverage/
 coverage.xml
 .pytest_cache
+htmlcov

@@ -1,0 +1,166 @@
+---
+version: 2.1
+
+orbs:
+  op: twdps/onepassword@1.0.0
+  do: twdps/pipeline-events@0.1.0
+
+# ================================================================= global configuration
+
+parameters:
+  context:
+    description: circleci context for all jobs
+    type: string
+    default: twdps-core-labs-team
+
+on-push-main: &on-push-main
+  branches:
+    only: /main/
+  tags:
+    ignore: /.*/
+
+on-tag-main: &on-tag-main
+  branches:
+    ignore: /.*/
+  tags:
+    only: /.*/
+
+executors:
+  python-builder:
+    docker:
+      - image: twdps/circleci-python-builder:stable
+
+# ================================================================= commands
+
+commands:
+
+  set-credentials:
+    parameters:
+      environment:
+        description: test or prod
+        type: string
+        default: test
+    steps:
+      - when:
+          condition:
+            equal: [ << parameters.environment >>, "test" ]
+          steps:
+            - run:
+                name: set test.pypi access
+                command: |
+                  cat \<<EOF > ~/.pypirc
+                  [testpypi]
+                    username = __token__
+                    password = ${PYPI_TEST_API_TOKEN}
+                  EOF
+      - when:
+          condition:
+            equal: [ << parameters.environment >>, "prod" ]
+          steps:
+            - run:
+                name: set pypi access
+                command: |
+                  cat \<<EOF > ~/.pypirc
+                  [pypi]
+                    username = __token__
+                    password = ${PYPI_API_TOKEN}
+                  EOF
+
+# ================================================================= jobs
+
+jobs:
+
+  static code analysis and unit tests:
+    executor: python-builder
+    steps:
+      - checkout
+      - setup_remote_docker
+      - op/env:
+          env-file: op.env
+      - run:
+          name: snyk credentials
+          command: |
+            snyk config set api=${SNYK_TOKEN}
+            snyk config set org=twdps
+      - run:
+          name: lint
+          command: pylint src
+      - run:
+          name: unit test
+          command: |
+            sudo pip install -r requirements.txt
+            PYTHONPATH=.:./src coverage run -m pytest -vv -l
+            coverage xml --omit='src/test*'
+            coverage report
+      - run:
+          name: report test coverage
+          command: |
+            cc-test-reporter format-coverage -t coverage.py
+            cc-test-reporter upload-coverage
+      - run:
+          name: cve scan
+          command: |
+            pipenv update
+            snyk test
+
+  build package and integration test:
+    executor: python-builder
+    steps:
+      - checkout
+      - setup_remote_docker
+      - op/env:
+          env-file: op.env
+      - set-credentials:
+          environment: test
+      - run:
+          name: Build
+          command: |
+            sudo pip install -r requirements.txt
+            python -m build
+      - run:
+          name: upload to test.pypi
+          command: python -m twine upload --repository testpypi dist/*
+      - persist_to_workspace:
+          root: .
+          paths:
+            - dist/
+
+  publish:
+    executor: python-builder
+    steps:
+      - checkout
+      - setup_remote_docker
+      - op/env:
+          env-file: op.env
+      - set-credentials:
+          environment: prod
+      - attach_workspace:
+          at: .
+      - run:
+          name: upload to pypi
+          command: python -m twine upload --repository pypi dist/*
+      - do/slack-webhook:
+          message: circlecigen $CIRCLE_TAG release
+          webhook-url: $LAB_EVENTS_CHANNEL_WEBHOOK
+
+# ================================================================= workflows
+
+workflows:
+  version: 2
+
+  python package pipeline:
+    jobs:
+
+      - static code analysis and unit tests:
+          context: << pipeline.parameters.context >>
+          filters: *on-push-main
+
+      - build package and integration test:
+          context: << pipeline.parameters.context >>
+          filters: *on-tag-main
+
+      - publish:
+          context: << pipeline.parameters.context >>
+          requires:
+            - build package and integration test
+          filters: *on-tag-main
