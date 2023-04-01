@@ -49,6 +49,3 @@ def test_generate_environment_tfvar_files():
                                     os.path.join("test", "preview-us-west-2.tfvars.json"))
     assert filecmp.cmp(os.path.join(mock_envpath, "preview-us-east-2.tfvars.json"),
                                     os.path.join("test", "preview-us-east-2.tfvars.json"))
-
-
-

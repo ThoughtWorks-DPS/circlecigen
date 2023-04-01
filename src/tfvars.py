@@ -27,7 +27,6 @@ def nummber_of_files_to_generate(environs):
     """calculate the number of total number of instances within the multi-role definition"""
     instance_count = 0
     for role in environs:
-        #instance_count = instance_count + role_instance_count_info(role)
         if isinstance(environs[role], dict):
             instance_count += len(environs[role])
         print(f"{role} role contains {instance_count} instance(s)")

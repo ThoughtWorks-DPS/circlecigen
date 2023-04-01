@@ -41,6 +41,7 @@ def generate_config(pipepath, outfile, envpath, environs, workflow):
     # the prior role approval set this as blank to start then populate
     # with the list of all instance plans jobs in the role
     priorapprovalrequired = ""
+    approvalrequiredjobs = ""
 
     # open the outfile for appeand and start processing roles/instances
     with open(f"{pipepath}/{outfile}", 'a', encoding="utf-8") as f:
@@ -49,63 +50,58 @@ def generate_config(pipepath, outfile, envpath, environs, workflow):
             if role == "filter":
                 continue
 
-            # when the approval template is generate, it must be populated with
-            # a list of all instances for which a pre-approval template is
-            # generated. Setup a string for this config.
-            approvalrequiredjobs = "requires:"
-
             # generate a pre-approval job for each instance in the role,
             # if a pre-approval.yml file exists
             if pre:
-                for instance in environs[role]:
-                    # fetch the assoicated tfvar file
-                    instance_vars=read_json_file(envpath,
-                                                 f"{instance}.tfvars.json")
-
-                    # additional values available to template
-                    instance_vars.update({
-                            "filters": environs["filter"],
-                            "role": role,
-                            "envpath": envpath
-                    })
-                    # include the 'requires:' information for all roles except
-                    # the first
-                    if priorapprovalrequired:
-                        instance_vars.update({
-                            "priorapprovalrequired": PRIOR_APPROVAL.format(priorapprovalrequired)
-                        })
-                    # Add this plan job name to the list of required jobs for the approval template
-                    approvalrequiredjobs += f"\n            - {instance} change plan"
-
-                    # write the formatted instance pre-approval template to generated_config.yml
-                    f.write(pre.render(instance_vars))
+                # when the approval template is generate, it must be populated with
+                # a list of all instances for which a pre-approval template is
+                # generated. That is returned by this job.
+                approvalrequiredjobs =  generate_pre_approval_jobs(f, envpath, pre, environs, role, priorapprovalrequired)
 
             # generate approval job for the current role, a human will trigger the post- phase
-            approve_vars.update ({
-                    "role": role,
-                    "approvalrequiredjobs": approvalrequiredjobs
-                    })
-            f.write(approve.render(approve_vars))
+            generate_approval_jobs(f, approve, approve_vars, approvalrequiredjobs, role)
 
-             # generate a post-approval job for each instance in the role,
-             # if a post-approval.yml file exists
+            # generate a post-approval job for each instance in the role,
+            # if a post-approval.yml file exists
             if post:
-                for instance in environs[role]:
-                    # fetch the assoicated tfvar file or error
-                    instance_vars=read_json_file(envpath, f"{instance}.tfvars.json")
-
-                    # additional values available to template
-                    instance_vars.update({
-                            "filters": environs["filter"],
-                            "role": role,
-                            "envpath": envpath
-                    })
-
-                    # write the instance post- template to the outfile
-                    f.write(post.render(instance_vars))
+                generate_post_approval_jobs(f, envpath, post, environs, role)
 
             # record the current role, to provide 'requires:' list in any subsequent pre- jobs
             priorapprovalrequired = role
+
+def generate_pre_approval_jobs(f, envpath, pre, environs, role, priorapprovalrequired):
+    approvalrequiredjobs = "requires:"
+    for instance in environs[role]:
+        instance_vars=read_json_file(envpath, f"{instance}.tfvars.json")
+        instance_vars.update({
+            "filters": environs["filter"],
+            "role": role,
+            "envpath": envpath
+        })
+        if priorapprovalrequired:
+            instance_vars.update({
+                "priorapprovalrequired": PRIOR_APPROVAL.format(priorapprovalrequired)
+            })
+        approvalrequiredjobs += f"\n            - {instance} change plan"
+        f.write(pre.render(instance_vars))
+    return approvalrequiredjobs
+
+def generate_approval_jobs(f, approve, approve_vars, approvalrequiredjobs, role):
+    approve_vars.update ({
+        "role": role,
+        "approvalrequiredjobs": approvalrequiredjobs
+    })
+    f.write(approve.render(approve_vars))
+
+def generate_post_approval_jobs(f, envpath, post, environs, role):
+    for instance in environs[role]:
+        instance_vars=read_json_file(envpath, f"{instance}.tfvars.json")
+        instance_vars.update({
+            "filters": environs["filter"],
+            "role": role,
+            "envpath": envpath
+        })
+        f.write(post.render(instance_vars))
 
 def get_templates(je, pipepath):
     """setup the jinja templates"""
