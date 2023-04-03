@@ -19,3 +19,4 @@ exclude_patterns:
   - "Pipfile"
   - "Pipfile.lock"
   - "README.md"
+  - "test_circlecigen.py"

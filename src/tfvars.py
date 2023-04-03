@@ -19,7 +19,9 @@ def generate_environment_tfvar_files(envpath, environs, defaultparams):
             # merge any instance overrides in muilti.json into instance dict
             instance_vars = merge(instance_vars, environs[role][instance])
             # set the env_instance to the current instance
-            instance_vars["env_instance"] = instance
+            instance_vars.update({
+                "env_instance": instance
+            })
             write_json_file(f"{envpath}/{instance}.tfvars.json", instance_vars)
     return nummber_of_files_to_generate(environs)
 
