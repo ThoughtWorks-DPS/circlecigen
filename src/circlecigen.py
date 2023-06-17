@@ -29,21 +29,21 @@ from template import generate_config
     callback=validate_filepath_arg)
 @click.argument('pipeline', nargs=1)
 def cli(pipeline, outfile, envpath, multifile, defaultparams, tfvars, workflow, pipepath):
-    """Opinionated generation of continuation pipelines.
-    See https://github.com/ThoughtWorks-DPS/circlecigen
-    for detailed usage instructions.
+    """
 
     Inputs 
 
-      .circleci/template.yml
+      .circleci/pre_approve.yml
+      .circleci/post_approve.yml
 
       environments/
 
-        default.tfvars.json
+        muilti.json
+        default.json
 
-        [role].tfvars.json
+        [role].json (optional)
 
-        [instance].tfvars.json
+        [instance].json (optional)
 
     Outputs:
 
@@ -52,6 +52,10 @@ def cli(pipeline, outfile, envpath, multifile, defaultparams, tfvars, workflow, 
       environments/
 
         [for each instance].tfvars.json
+
+    Opinionated generation of continuation pipelines.
+    See https://github.com/ThoughtWorks-DPS/circlecigen
+    for detailed usage instructions.
     """
     validate_filepath(envpath, "envpath")
     validate_filepath(pipepath, "pipepath")
