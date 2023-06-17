@@ -27,7 +27,8 @@ from template import generate_config
 @click.option("--pipepath", default=".circleci",
     help="Override default config.yml location for testing",
     callback=validate_filepath_arg)
-def cli(outfile, envpath, multifile, defaultparams, tfvars, workflow, pipepath):
+@click.argument('pipeline', nargs=1)
+def cli(pipeline, outfile, envpath, multifile, defaultparams, tfvars, workflow, pipepath):
     """Opinionated generation of continuation pipelines.
     See https://github.com/ThoughtWorks-DPS/circlecigen
     for detailed usage instructions.
@@ -56,13 +57,14 @@ def cli(outfile, envpath, multifile, defaultparams, tfvars, workflow, pipepath):
     validate_filepath(pipepath, "pipepath")
 
     if tfvars:
-        result = generate_environment_tfvar_files(envpath,
+        result = generate_environment_tfvar_files(pipeline, envpath,
                  read_json_file(envpath, multifile),
                  read_json_file(envpath, defaultparams))
         click.echo(f"{result} tfvars created in {envpath}/")
     else:
         click.echo("Not generating tfvars.json files")
-    generate_config(pipepath,
+    generate_config(pipeline, 
+                    pipepath,
                     outfile,
                     envpath,
                     read_json_file(envpath, multifile),
