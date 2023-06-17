@@ -15,15 +15,20 @@ def generate_environment_tfvar_files(use_pipeline, envpath, environs, defaultpar
         # start with an instance.tfvars.json dict made from the default environment parameters
         role_vars = defaultparams
 
-        # if there is a matching role..json file, get the values to merge in the next step
+        # if there is a matching role.json file, get the values to merge in the next step
         if isfile(f"{envpath}/{role}.json"):
            role_vars = merge(role_vars,read_json_file(envpath, f"{role}.json"))
 
         for instance in pipeline[role]:
             instance_vars = role_vars
 
-            # merge any instance overrides in muilti.json into instance dict
+            # merge matching instance.json
+            if isfile(f"{envpath}/{instance}.json"):
+                instance_vars = merge(instance_vars,read_json_file(envpath, f"{instance}.json"))
+            
+            # merge any instance overrides in muilti.json into instance dict, intended to overwrite conflicts out of multi.json
             instance_vars = merge(instance_vars, pipeline[role][instance])
+
             # set the env_instance to the current instance
             instance_vars.update({
                 "env_instance": instance
