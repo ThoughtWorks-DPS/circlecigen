@@ -36,11 +36,13 @@ def generate_environment_tfvar_files(use_pipeline, envpath, environs, defaultpar
             write_json_file(f"{envpath}/{instance}.tfvars.json", instance_vars)
     return nummber_of_files_to_generate(pipeline)
 
-def nummber_of_files_to_generate(environs):
+def nummber_of_files_to_generate(pipeline):
     """calculate the number of total number of instances within the multi-role definition"""
     instance_count = 0
-    for role in environs:
-        if isinstance(environs[role], dict):
-            instance_count += len(environs[role])
-        print(f"{role} role contains {instance_count} instance(s)")
+    for role in pipeline:
+        if role == "filter":
+            continue
+        print(f"{role} role contains {len(pipeline[role])} instance(s)")
+        if isinstance(pipeline[role], dict):
+            instance_count += len(pipeline[role])
     return instance_count
