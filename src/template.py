@@ -23,8 +23,11 @@ PRIOR_APPROVAL="""
             - approve {} changes
 """
 
-def generate_config(pipepath, outfile, envpath, environs, workflow):
+def generate_config(use_pipeline, pipepath, outfile, envpath, environs, workflow):
     """create generated_config.yaml for continuation orb"""
+
+    # use the specified filter to generate a pipeline only for the desired trigger
+    pipeline = environs[use_pipeline]
 
     # copy everything but the jobs and workflows from config.yml into generated_config.yml
     setup_generated_config_outfile(pipepath, outfile, workflow)
@@ -35,7 +38,7 @@ def generate_config(pipepath, outfile, envpath, environs, workflow):
 
     # setup Dict for the approval job template 
     approve_vars = {}
-    approve_vars["filter"] = environs["filter"]
+    approve_vars["filter"] = pipeline["filter"]
 
     # all pre-approval jobs created accept for the first role must wait for
     # the prior role approval set this as blank to start then populate
@@ -45,29 +48,29 @@ def generate_config(pipepath, outfile, envpath, environs, workflow):
 
     # open the outfile for appeand and start processing roles/instances
     with open(f"{pipepath}/{outfile}", 'a', encoding="utf-8") as f:
-        for role in environs:
+        for role in pipeline:
             # skip the filter definition
             if role == "filter":
                 continue
             # when the approval template is generate, it must be populated with
             # a list of all instances for which a pre-approval template is
             # generated. That is returned by this job.
-            approvalrequiredjobs =  generate_pre_approval_jobs(f, envpath, pre, environs, role, priorapprovalrequired)
+            approvalrequiredjobs =  generate_pre_approval_jobs(f, envpath, pre, pipeline, role, priorapprovalrequired)
             # generate approval job for the current role, a human will trigger the post- phase
             generate_approval_jobs(f, approve, approve_vars, approvalrequiredjobs, role)
-            generate_post_approval_jobs(f, envpath, post, environs, role)
+            generate_post_approval_jobs(f, envpath, post, pipeline, role)
             # record the current role, to provide 'requires:' list in any subsequent pre- jobs
             priorapprovalrequired = role
 
-def generate_pre_approval_jobs(f, envpath, pre, environs, role, priorapprovalrequired):
+def generate_pre_approval_jobs(f, envpath, pre, pipeline, role, priorapprovalrequired):
     # generate a pre-approval job for each instance in the role,
     # if a pre-approval.yml file exists
     if pre:
         approvalrequiredjobs = "requires:"
-        for instance in environs[role]:
+        for instance in pipeline[role]:
             instance_vars=read_json_file(envpath, f"{instance}.tfvars.json")
             instance_vars.update({
-                "filters": environs["filter"],
+                "filters": pipeline["filter"],
                 "role": role,
                 "envpath": envpath
             })
@@ -87,14 +90,14 @@ def generate_approval_jobs(f, approve, approve_vars, approvalrequiredjobs, role)
     })
     f.write(approve.render(approve_vars))
 
-def generate_post_approval_jobs(f, envpath, post, environs, role):
+def generate_post_approval_jobs(f, envpath, post, pipeline, role):
     # generate a post-approval job for each instance in the role,
     # if a post-approval.yml file exists
     if post:
-        for instance in environs[role]:
+        for instance in pipeline[role]:
             instance_vars=read_json_file(envpath, f"{instance}.tfvars.json")
             instance_vars.update({
-                "filters": environs["filter"],
+                "filters": pipeline["filter"],
                 "role": role,
                 "envpath": envpath
             })
@@ -119,6 +122,7 @@ def generate_config_lines(pipepath):
 def _read_until_jobs_or_workflows(f):
     """Generator that reads lines from file object f until it encounters a line starting with 'jobs:' or 'workflows:'"""
     for line in f:
+        # initially, 
         if line.startswith("jobs:") or line.startswith("workflows:"):
             break
         yield line
