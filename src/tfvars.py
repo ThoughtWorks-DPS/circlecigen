@@ -1,9 +1,13 @@
 from os.path import isfile
 from utils import read_json_file, merge, write_json_file
 
-def generate_environment_tfvar_files(envpath, environs, defaultparams):
+def generate_environment_tfvar_files(use_pipeline, envpath, environs, defaultparams):
     """create and write instance.tfvars.json files for each multi-env instance"""
-    for role in environs:
+
+    # use the specified filter to generate a pipeline only for the desired trigger
+    pipeline = environs[use_pipeline]
+
+    for role in pipeline:
          # skip the filter key, this is used to specify the trigger for a generated pipeline
         if role == "filter":
             continue
@@ -15,15 +19,15 @@ def generate_environment_tfvar_files(envpath, environs, defaultparams):
         if isfile(f"{envpath}/{role}.tfvars.json"):
            instance_vars = merge(instance_vars,read_json_file(envpath, f"{role}.tfvars.json"))
 
-        for instance in environs[role]:
+        for instance in pipeline[role]:
             # merge any instance overrides in muilti.json into instance dict
-            instance_vars = merge(instance_vars, environs[role][instance])
+            instance_vars = merge(instance_vars, pipeline[role][instance])
             # set the env_instance to the current instance
             instance_vars.update({
                 "env_instance": instance
             })
             write_json_file(f"{envpath}/{instance}.tfvars.json", instance_vars)
-    return nummber_of_files_to_generate(environs)
+    return nummber_of_files_to_generate(pipeline)
 
 def nummber_of_files_to_generate(environs):
     """calculate the number of total number of instances within the multi-role definition"""
