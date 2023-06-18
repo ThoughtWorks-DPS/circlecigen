@@ -3,22 +3,37 @@ import filecmp
 from jinja2 import Environment, FileSystemLoader, Template
 from template import setup_generated_config_outfile, get_templates, generate_config
 
-mock_environs = {
-  "filter": "*on-push-main",
-  "qa": {
-    "qa-us-west-2": {
-      "aws_region": "us-west-2"
-    },
-    "qa-us-east-2": {
-      "aws_region": "us-east-2"
+mock_multi = {
+  "sandbox": {
+    "filter": "*on-push-main",
+    "dev": {
+      "dev-us-east-2": {
+        "aws_region": "us-east-2",
+        "aws_account_id": "10100000000"
+      }
     }
   },
-  "preview": {
-    "preview-us-east-2": {
-      "aws_region": "us-east-2"
+  "release": {
+    "filter": "*on-tag-main",
+    "nonprod": {
+      "nonprod-us-west-2": {
+        "aws_region": "us-west-2",
+        "aws_account_id": "20100000000"
+      },
+      "nonprod-us-east-2": {
+        "aws_region": "us-east-2",
+        "aws_account_id": "20100000000"
+      }
     },
-    "preview-us-west-2": {
-      "aws_region": "us-west-2"
+    "prod": {
+      "prod-us-west-2": {
+        "aws_region": "us-west-2",
+        "aws_account_id": "30100000000"
+      },
+      "prod-us-east-2": {
+        "aws_region": "us-east-2",
+        "aws_account_id": "30100000000"
+      }
     }
   }
 }
@@ -47,12 +62,13 @@ def test_get_templates():
 
 # this is as ugly as the tfvars file output tests
 def test_generate_config():
+    mock_pipeline = "release"
     mock_pipepath = "env_test"
     mock_envpath = "env_test"
     mock_outfile = "generated_config.yml"
     mock_workflow = "continuation-generated-workflow"
 
-    generate_config(mock_pipepath, mock_outfile, mock_envpath, mock_environs, mock_workflow)
+    generate_config(mock_pipeline, mock_pipepath, mock_outfile, mock_envpath, mock_multi, mock_workflow)
     assert os.path.isfile(os.path.join(mock_pipepath, mock_outfile))
     assert filecmp.cmp(os.path.join(mock_pipepath,
                        mock_outfile),

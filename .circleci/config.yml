@@ -7,11 +7,8 @@ orbs:
 
 # ================================================================= global configuration
 
-parameters:
-  context:
-    description: circleci context for all jobs
-    type: string
-    default: twdps-core-labs-team
+globals:
+  - &context twdps-core-labs-team
 
 on-push-main: &on-push-main
   branches:
@@ -152,15 +149,15 @@ workflows:
     jobs:
 
       - static code analysis and unit tests:
-          context: << pipeline.parameters.context >>
+          context: *context
           filters: *on-push-main
 
       - build package and integration test:
-          context: << pipeline.parameters.context >>
+          context: *context
           filters: *on-tag-main
 
       - publish:
-          context: << pipeline.parameters.context >>
+          context: *context
           requires:
             - build package and integration test
           filters: *on-tag-main

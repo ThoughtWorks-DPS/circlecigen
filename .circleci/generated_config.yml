@@ -1,14 +1,14 @@
 ---
 version: 2.1
 
-
 orbs:
-  terraform: twdps/terraform@0.6.0
+  op: twdps/onepassword@1.0.0
+  do: twdps/pipeline-events@0.1.0
 
-# =================== global config
+# ================================================================= global configuration
 
 globals:
- - &context di-DR-lab
+  - &context twdps-core-labs-team
 
 on-push-main: &on-push-main
   branches:
@@ -16,45 +16,54 @@ on-push-main: &on-push-main
   tags:
     ignore: /.*/
 
-# ===================================
+on-tag-main: &on-tag-main
+  branches:
+    ignore: /.*/
+  tags:
+    only: /.*/
+
+executors:
+  python-builder:
+    docker:
+      - image: twdps/circleci-python-builder:stable
+
+# ================================================================= commands
 
 commands:
 
-  set-environment:
-    description: generate environment credentials and configuration from templates
+  set-credentials:
     parameters:
-      cluster:
-        description: cluster name to use for configuration
+      environment:
+        description: test or prod
         type: string
-      source-env:
-        description: .env file to source into BASH_ENV
-        type: string
+        default: test
     steps:
-      - op/env:
-          env-file: << parameters.source-env >>
-      - run:
-          name: set ~/.terraformrc
-          command: op inject -i tpl/terraformrc.tpl -o ~/.terraformrc
-      - run:
-          name: set << parameters.cluster >> environment variables
-          command: |
-            op inject -i environments/<< parameters.cluster >>.auto.tfvars.json.tpl -o << parameters.cluster >>.auto.tfvars.json
+      - when:
+          condition:
+            equal: [ << parameters.environment >>, "test" ]
+          steps:
+            - run:
+                name: set test.pypi access
+                command: |
+                  cat \<<EOF > ~/.pypirc
+                  [testpypi]
+                    username = __token__
+                    password = ${PYPI_TEST_API_TOKEN}
+                  EOF
+      - when:
+          condition:
+            equal: [ << parameters.environment >>, "prod" ]
+          steps:
+            - run:
+                name: set pypi access
+                command: |
+                  cat \<<EOF > ~/.pypirc
+                  [pypi]
+                    username = __token__
+                    password = ${PYPI_API_TOKEN}
+                  EOF
 
-  store-system-credentials:
-    parameters:
-      region:
-        type: string
-    steps:
-      - run:
-          name: install teller
-          command: |
-            wget https://github.com/tellerops/teller/releases/download/v1.5.6/teller_1.5.6_Linux_x86_64.tar.gz
-            sudo tar -xvf teller_1.5.6_Linux_x86_64.tar.gz
-            sudo mv teller /usr/local/bin/.
-      - run:
-          name: write cluster kubeconfig to secrets store
-          command: bash scripts/write_cluster_credentials.sh << parameters.region >>
-
+# ================================================================= jobs
 
 
 workflows:
@@ -66,7 +75,7 @@ workflows:
           name: nonprod-us-west-2 change plan
           context: *context
           workspace: nonprod-us-west-2
-          var-file: env_test/nonprod-us-west-2.tfvars.json
+          var-file: environments/nonprod-us-west-2.tfvars.json
           before-terraform:
             - set-environment
           filters: *on-tag-main
@@ -75,7 +84,7 @@ workflows:
           name: nonprod-us-east-2 change plan
           context: *context
           workspace: nonprod-us-east-2
-          var-file: env_test/nonprod-us-east-2.tfvars.json
+          var-file: environments/nonprod-us-east-2.tfvars.json
           before-terraform:
             - set-environment
           filters: *on-tag-main
@@ -91,7 +100,7 @@ workflows:
           name: apply nonprod-us-west-2 change plan
           context: *context
           workspace: nonprod-us-west-2
-          var-file: env_test/nonprod-us-west-2.tfvars.json
+          var-file: environments/nonprod-us-west-2.tfvars.json
           before-terraform:
             - set-environment
           after-terraform:
@@ -107,7 +116,7 @@ workflows:
           name: apply nonprod-us-east-2 change plan
           context: *context
           workspace: nonprod-us-east-2
-          var-file: env_test/nonprod-us-east-2.tfvars.json
+          var-file: environments/nonprod-us-east-2.tfvars.json
           before-terraform:
             - set-environment
           after-terraform:
@@ -123,7 +132,7 @@ workflows:
           name: prod-us-west-2 change plan
           context: *context
           workspace: prod-us-west-2
-          var-file: env_test/prod-us-west-2.tfvars.json
+          var-file: environments/prod-us-west-2.tfvars.json
           before-terraform:
             - set-environment
           filters: *on-tag-main
@@ -135,7 +144,7 @@ workflows:
           name: prod-us-east-2 change plan
           context: *context
           workspace: prod-us-east-2
-          var-file: env_test/prod-us-east-2.tfvars.json
+          var-file: environments/prod-us-east-2.tfvars.json
           before-terraform:
             - set-environment
           filters: *on-tag-main
@@ -154,7 +163,7 @@ workflows:
           name: apply prod-us-west-2 change plan
           context: *context
           workspace: prod-us-west-2
-          var-file: env_test/prod-us-west-2.tfvars.json
+          var-file: environments/prod-us-west-2.tfvars.json
           before-terraform:
             - set-environment
           after-terraform:
@@ -170,7 +179,7 @@ workflows:
           name: apply prod-us-east-2 change plan
           context: *context
           workspace: prod-us-east-2
-          var-file: env_test/prod-us-east-2.tfvars.json
+          var-file: environments/prod-us-east-2.tfvars.json
           before-terraform:
             - set-environment
           after-terraform:

@@ -1,19 +1,34 @@
 {
-  "filter": "*on-push-main",
-  "qa": {
-    "qa-us-west-2": {
-      "aws_region": "us-west-2"
+    "sandbox": {
+      "filter": "*on-push-main",
+      "dev": {
+        "dev-us-east-2": {
+          "aws_region": "us-east-2",
+          "aws_account_id": "10100000000"
+        }
+      }
     },
-    "qa-us-east-2": {
-      "aws_region": "us-east-2"
+    "release": {
+      "filter": "*on-tag-main",
+      "nonprod": {
+        "nonprod-us-west-2": {
+          "aws_region": "us-west-2",
+          "aws_account_id": "20100000000"
+        },
+        "nonprod-us-east-2": {
+          "aws_region": "us-east-2",
+          "aws_account_id": "20100000000"
+        }
+      },
+      "prod": {
+        "prod-us-west-2": {
+          "aws_region": "us-west-2",
+          "aws_account_id": "30100000000"
+        },
+        "prod-us-east-2": {
+          "aws_region": "us-east-2",
+          "aws_account_id": "30100000000"
+        }
+      }
     }
-  },
-  "preview": {
-    "preview-us-east-2": {
-      "aws_region": "us-east-2"
-    },
-    "preview-us-west-2": {
-      "aws_region": "us-west-2"
-    }
-  }
 }

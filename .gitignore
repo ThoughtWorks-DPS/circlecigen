@@ -10,3 +10,4 @@ coverage.xml
 htmlcov
 Pipfile.lock
 environments/
+build

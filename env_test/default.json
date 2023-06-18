@@ -1,5 +1,4 @@
 {
-  "env_instance": "default-env-instance",
-  "aws_region": "default-region",
-  "aws_account_id": "default-account-id"
+    "aws_region": "default-region",
+    "aws_account_id": "default-account-id"
 }

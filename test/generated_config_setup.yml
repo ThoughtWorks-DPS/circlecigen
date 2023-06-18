@@ -5,15 +5,10 @@ version: 2.1
 orbs:
   terraform: twdps/terraform@0.6.0
 
-# ==== global pipeline parameters
+# =================== global config
 
-parameters:
-  context:
-    description: circleci context for all jobs
-    type: string
-    default: di-DR-lab
-
-# ==== triggers
+globals:
+ - &context di-DR-lab
 
 on-push-main: &on-push-main
   branches:
@@ -21,21 +16,30 @@ on-push-main: &on-push-main
   tags:
     ignore: /.*/
 
-# ==== commands, jobs, workflows
+# ===================================
 
 commands:
 
   set-environment:
+    description: generate environment credentials and configuration from templates
+    parameters:
+      cluster:
+        description: cluster name to use for configuration
+        type: string
+      source-env:
+        description: .env file to source into BASH_ENV
+        type: string
     steps:
+      - op/env:
+          env-file: << parameters.source-env >>
       - run:
-          name: set terraform cloud credentials
+          name: set ~/.terraformrc
+          command: op inject -i tpl/terraformrc.tpl -o ~/.terraformrc
+      - run:
+          name: set << parameters.cluster >> environment variables
           command: |
-            pwd
-            cat \<<EOF > ~/.terraformrc
-            credentials "app.terraform.io" {
-              token = "${TFE_TOKEN}"
-            }
-            EOF
+            op inject -i environments/<< parameters.cluster >>.auto.tfvars.json.tpl -o << parameters.cluster >>.auto.tfvars.json
+
   store-system-credentials:
     parameters:
       region:
@@ -50,38 +54,7 @@ commands:
       - run:
           name: write cluster kubeconfig to secrets store
           command: bash scripts/write_cluster_credentials.sh << parameters.region >>
-  
-  create-storage-class:
-    parameters:
-      region-file:
-        type: string
-      workspace:
-        type: string
-    steps:
-      - run:
-          name: install kubectl
-          command: |
-            curl -LO "https://dl.k8s.io/release/v1.26.2/bin/linux/amd64/kubectl"
-            sudo chmod +x kubectl
-            sudo mv -f kubectl /usr/local/bin/kubectl
-      - run:
-          name: install helm
-          command: |
-            curl -SLO "https://get.helm.sh/helm-v3.11.2-linux-amd64.tar.gz"
-            tar -xf "helm-v3.11.2-linux-amd64.tar.gz"
-            sudo mv -f linux-amd64/helm /usr/local/bin
-      - run:
-          name: set kuebconfig 
-          command: |
-            mkdir ~/.kube
-            cat kubeconfig_di-dr-lab-<< parameters.region-file >> > ~/.kube/config
-            chmod 600 ~/.kube/config
-      - run:
-          name: deploy aws efs-csi storage class provisioners
-          command: bash scripts/deploy_efs_csi_driver.sh << parameters.region-file >>
-      - run:
-          name: provision cluster-wide storage class definition
-          command: bash scripts/deploy_efs_storage_class.sh << parameters.region-file >> << parameters.workspace >>
+
 
 
 workflows:

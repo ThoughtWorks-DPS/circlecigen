@@ -6,15 +6,10 @@ setup: true
 orbs:
   terraform: twdps/terraform@0.6.0
 
-# ==== global pipeline parameters
+# =================== global config
 
-parameters:
-  context:
-    description: circleci context for all jobs
-    type: string
-    default: di-DR-lab
-
-# ==== triggers
+globals:
+ - &context di-DR-lab
 
 on-push-main: &on-push-main
   branches:
@@ -22,21 +17,30 @@ on-push-main: &on-push-main
   tags:
     ignore: /.*/
 
-# ==== commands, jobs, workflows
+# ===================================
 
 commands:
 
   set-environment:
+    description: generate environment credentials and configuration from templates
+    parameters:
+      cluster:
+        description: cluster name to use for configuration
+        type: string
+      source-env:
+        description: .env file to source into BASH_ENV
+        type: string
     steps:
+      - op/env:
+          env-file: << parameters.source-env >>
       - run:
-          name: set terraform cloud credentials
+          name: set ~/.terraformrc
+          command: op inject -i tpl/terraformrc.tpl -o ~/.terraformrc
+      - run:
+          name: set << parameters.cluster >> environment variables
           command: |
-            pwd
-            cat \<<EOF > ~/.terraformrc
-            credentials "app.terraform.io" {
-              token = "${TFE_TOKEN}"
-            }
-            EOF
+            op inject -i environments/<< parameters.cluster >>.auto.tfvars.json.tpl -o << parameters.cluster >>.auto.tfvars.json
+
   store-system-credentials:
     parameters:
       region:
@@ -51,153 +55,52 @@ commands:
       - run:
           name: write cluster kubeconfig to secrets store
           command: bash scripts/write_cluster_credentials.sh << parameters.region >>
-  
-  create-storage-class:
+
+
+jobs:
+
+  launch-dynamic-pipeline:
     parameters:
-      region-file:
+      workflow-name:
+        description: Custom name for the resulting workflow within the generated_config.yml
         type: string
-      workspace:
+      multi-config:
+        description: name of the multi-environment definition/configuration file to use
         type: string
+        default: multi.json
+    executor: continuation/default
     steps:
+      - checkout
       - run:
-          name: install kubectl
-          command: |
-            curl -LO "https://dl.k8s.io/release/v1.26.2/bin/linux/amd64/kubectl"
-            sudo chmod +x kubectl
-            sudo mv -f kubectl /usr/local/bin/kubectl
-      - run:
-          name: install helm
-          command: |
-            curl -SLO "https://get.helm.sh/helm-v3.11.2-linux-amd64.tar.gz"
-            tar -xf "helm-v3.11.2-linux-amd64.tar.gz"
-            sudo mv -f linux-amd64/helm /usr/local/bin
-      - run:
-          name: set kuebconfig 
-          command: |
-            mkdir ~/.kube
-            cat kubeconfig_di-dr-lab-<< parameters.region-file >> > ~/.kube/config
-            chmod 600 ~/.kube/config
-      - run:
-          name: deploy aws efs-csi storage class provisioners
-          command: bash scripts/deploy_efs_csi_driver.sh << parameters.region-file >>
-      - run:
-          name: provision cluster-wide storage class definition
-          command: bash scripts/deploy_efs_storage_class.sh << parameters.region-file >> << parameters.workspace >>
+          name: generate continuation pipeline
+          command: circlecigen --workflow << parameters.workflow-name >>
+      - continuation/continue:
+          configuration_path: .circleci/generated_config.yml
 
 workflows:
   version: 2
 
   deploy di-DR-lab eks:
     jobs:
-      - terraform/plan:
-          name: di-DR-lab us-west cluster change plan
-          context: << pipeline.parameters.context >>
-          workspace: uswest
-          var-file: environments/us-west.tfvars.json
-          before-terraform:
-            - set-environment
+      - my-pre-deploy-jobs:
+          name: could be one or more first jobs
+          parameter: required parameters
           filters: *on-push-main
 
-      - terraform/plan:
-          name: di-DR-lab us-east cluster change plan
-          context: << pipeline.parameters.context >>
-          workspace: useast
-          var-file: environments/us-east.tfvars.json
-          before-terraform:
-            - set-environment
-          filters: *on-push-main
-
-      - terraform/plan:
-          name: di-DR-lab eu-central cluster change plan
-          context: << pipeline.parameters.context >>
-          workspace: eucentral
-          var-file: environments/eu-central.tfvars.json
-          before-terraform:
-            - set-environment
-          filters: *on-push-main
-
-      - terraform/plan:
-          name: di-DR-lab eu-west cluster change plan
-          context: << pipeline.parameters.context >>
-          workspace: euwest
-          var-file: environments/eu-west.tfvars.json
-          before-terraform:
-            - set-environment
-          filters: *on-push-main
-
-      - approve di-DR-lab cluster changes:
-          type: approval
+      # the continuation launch will use the dev-deploy.json so as to only
+      # deploy to infra-dev instances.
+      - launch-dynamic-pipeline:
+          name: dev-build
+          workflow-name: dev-environment-deployment
+          multi-config: dev-deploy.json
           requires:
-            - di-DR-lab us-west cluster change plan
-            - di-DR-lab us-east cluster change plan
-            - di-DR-lab eu-central cluster change plan
-            - di-DR-lab eu-west cluster change plan
+            - first job 
           filters: *on-push-main
 
-      - terraform/apply:
-          name: apply di-DR-lab us-west cluster changes
-          context: << pipeline.parameters.context >>
-          workspace: uswest
-          var-file: environments/us-west.tfvars.json
-          before-terraform:
-            - set-environment
-          after-terraform:
-            - store-system-credentials:
-                region: us-west
-            - create-storage-class:
-                region-file: us-west
-                workspace: uswest
-          requires:
-            - approve di-DR-lab cluster changes
-          filters: *on-push-main
-
-      - terraform/apply:
-          name: apply di-DR-lab us-east cluster changes
-          context: << pipeline.parameters.context >>
-          workspace: useast
-          var-file: environments/us-east.tfvars.json
-          before-terraform:
-            - set-environment
-          after-terraform:
-            - store-system-credentials:
-                region: us-east
-            - create-storage-class:
-                region-file: us-east
-                workspace: useast
-          requires:
-            - approve di-DR-lab cluster changes
-          filters: *on-push-main
-
-      - terraform/apply:
-          name: apply di-DR-lab eu-central cluster changes
-          context: << pipeline.parameters.context >>
-          workspace: eucentral
-          var-file: environments/eu-central.tfvars.json
-          before-terraform:
-            - set-environment
-          after-terraform:
-            - store-system-credentials:
-                region: eu-central
-            - create-storage-class:
-                region-file: eu-central
-                workspace: eucentral
-          requires:
-            - approve di-DR-lab cluster changes
-          filters: *on-push-main
-
-      - terraform/apply:
-          name: apply di-DR-lab eu-west cluster changes
-          context: << pipeline.parameters.context >>
-          workspace: euwest
-          var-file: environments/eu-west.tfvars.json
-          before-terraform:
-            - set-environment
-          after-terraform:
-            - store-system-credentials:
-                region: eu-west
-            - create-storage-class:
-                region-file: eu-west
-                workspace: euwest
-          requires:
-            - approve di-DR-lab cluster changes
-          filters: *on-push-main
+      # this continutation is only called when the repo is tagged and 
+      # passes the release.json to generate the full release pipeline
+      - launch-dynamic-pipeline:
+          name: release candidate
+          workflow-name: release-pipeline
+          multi-config: release.json
+          filters: *on-tag-main
