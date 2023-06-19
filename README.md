@@ -259,7 +259,7 @@ Of course you must have the regular circleci pipeline file that responds to trig
 
 **.circleci/pre-approve.yml**  
 
-This file is a template that will be populate with instance specific info when the pipeline is generated from within the config.yml pipeline.  
+This file is a template that will be populate with instance specific info when the pipeline is generated from within the config.yml pipeline. All values in the env_instance.tfvars.json configuration are avaliable to be used in the jinja template. Keep in mind that the same yaml template is used for each role so it will not work to have a value that ONLY exists in a single instance or role if the value appears in the yaml template.    
 
 ```yaml
       - terraform/plan:

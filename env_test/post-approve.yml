@@ -13,5 +13,6 @@
                 workspace: {{env_instance}}
           requires:
             - approve {{role}} changes
+          filters: {{filters}}
 
 

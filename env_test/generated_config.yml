@@ -83,8 +83,8 @@ workflows:
       - approve nonprod changes:
           type: approval
           requires:
-            - nonprod-us-west-2 change plan
-            - nonprod-us-east-2 change plan
+            - plan nonprod-us-west-2 change
+            - plan nonprod-us-east-2 change
           filters: *on-tag-main
 
       - terraform/apply:
@@ -102,6 +102,7 @@ workflows:
                 workspace: nonprod-us-west-2
           requires:
             - approve nonprod changes
+          filters: *on-tag-main
 
       - terraform/apply:
           name: apply nonprod-us-east-2 change plan
@@ -118,6 +119,7 @@ workflows:
                 workspace: nonprod-us-east-2
           requires:
             - approve nonprod changes
+          filters: *on-tag-main
 
       - terraform/plan:
           name: prod-us-west-2 change plan
@@ -146,8 +148,8 @@ workflows:
       - approve prod changes:
           type: approval
           requires:
-            - prod-us-west-2 change plan
-            - prod-us-east-2 change plan
+            - plan prod-us-west-2 change
+            - plan prod-us-east-2 change
           filters: *on-tag-main
 
       - terraform/apply:
@@ -165,6 +167,7 @@ workflows:
                 workspace: prod-us-west-2
           requires:
             - approve prod changes
+          filters: *on-tag-main
 
       - terraform/apply:
           name: apply prod-us-east-2 change plan
@@ -181,4 +184,5 @@ workflows:
                 workspace: prod-us-east-2
           requires:
             - approve prod changes
+          filters: *on-tag-main
 
