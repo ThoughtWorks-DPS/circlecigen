@@ -30,6 +30,9 @@ def generate_config(use_pipeline, pipepath, outfile, envpath, environs, workflow
     pipeline = environs[use_pipeline]
 
     # copy everything but the jobs and workflows from config.yml into generated_config.yml
+    # pipepath = where to find config.yml, default .circleci
+    # outfile  = where to write generated_config.yml, default .circleci
+    # workflow = what to name the generated workflow, default continuation-generated-workflow
     setup_generated_config_outfile(pipepath, outfile, workflow)
 
     # setup the jinja templates
@@ -52,13 +55,16 @@ def generate_config(use_pipeline, pipepath, outfile, envpath, environs, workflow
             # skip the filter definition
             if role == "filter":
                 continue
+
             # when the approval template is generate, it must be populated with
             # a list of all instances for which a pre-approval template is
             # generated. That is returned by this job.
-            approvalrequiredjobs =  generate_pre_approval_jobs(f, envpath, pre, pipeline, role, priorapprovalrequired)
+            approvalrequiredjobs = generate_pre_approval_jobs(f, envpath, pre, pipeline, role, priorapprovalrequired)
+
             # generate approval job for the current role, a human will trigger the post- phase
             generate_approval_jobs(f, approve, approve_vars, approvalrequiredjobs, role)
             generate_post_approval_jobs(f, envpath, post, pipeline, role)
+
             # record the current role, to provide 'requires:' list in any subsequent pre- jobs
             priorapprovalrequired = role
 
@@ -78,7 +84,7 @@ def generate_pre_approval_jobs(f, envpath, pre, pipeline, role, priorapprovalreq
                 instance_vars.update({
                     "priorapprovalrequired": PRIOR_APPROVAL.format(priorapprovalrequired)
                 })
-            approvalrequiredjobs += f"\n            - {instance} change plan"
+            approvalrequiredjobs += f"\n            - plan {instance} change"
             f.write(pre.render(instance_vars))
         return approvalrequiredjobs
     return None
