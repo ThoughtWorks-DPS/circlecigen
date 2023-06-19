@@ -15,6 +15,11 @@ def generate_environment_tfvar_files(use_pipeline, envpath, environs, defaultpar
         # start with an instance.tfvars.json dict made from the default environment parameters
         role_vars = defaultparams
 
+        # if there is a matching use_pipeline.json file for values are unique to this pipeline 
+        # yet universal to all roles (contrast with default which apply also to all pipelines)
+        if isfile(f"{envpath}/{use_pipeline}.json"):
+           role_vars = merge(role_vars,read_json_file(envpath, f"{use_pipeline}.json"))
+
         # if there is a matching role.json file, get the values to merge in the next step
         if isfile(f"{envpath}/{role}.json"):
            role_vars = merge(role_vars,read_json_file(envpath, f"{role}.json"))
