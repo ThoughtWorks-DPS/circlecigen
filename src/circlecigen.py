@@ -1,8 +1,8 @@
 import click
 from pathvalidate.click import validate_filename_arg, validate_filepath_arg
-from tfvars import generate_environment_tfvar_files
-from utils import read_json_file, validate_filepath
-from template import generate_config
+from src.tfvars import generate_environment_tfvar_files
+from src.utils import read_json_file, validate_filepath
+from src.template import generate_config
 
 @click.version_option()
 @click.command()

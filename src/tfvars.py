@@ -1,5 +1,5 @@
 from os.path import isfile
-from utils import read_json_file, merge, write_json_file
+from src.utils import read_json_file, merge, write_json_file
 
 def generate_environment_tfvar_files(use_pipeline, envpath, environs, defaultparams):
     """create and write instance.tfvars.json files for each multi-env instance"""

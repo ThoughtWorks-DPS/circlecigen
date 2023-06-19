@@ -15,11 +15,11 @@ setuptools.setup(
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
     ],
-    package_dir={"": "src"},
-    packages=setuptools.find_packages(where="src"),
+    packages=setuptools.find_packages(),
+    include_package_data=True,
     python_requires=">=3.10",
     entry_points='''
         [console_scripts]
-        circlecigen=circlecigen:cli
+        circlecigen=src.circlecigen:cli
     '''
 )

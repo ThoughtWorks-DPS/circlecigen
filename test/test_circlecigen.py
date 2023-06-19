@@ -1,5 +1,5 @@
 from click.testing import CliRunner
-from circlecigen import cli
+from src.circlecigen import cli
 
 def test_circlecigen_with_invalid_outfile_name():
   runner = CliRunner()

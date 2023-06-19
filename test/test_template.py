@@ -1,7 +1,7 @@
 import os
 import filecmp
 from jinja2 import Environment, FileSystemLoader, Template
-from template import setup_generated_config_outfile, get_templates, generate_config
+from src.template import setup_generated_config_outfile, get_templates, generate_config
 
 mock_multi = {
   "sandbox": {

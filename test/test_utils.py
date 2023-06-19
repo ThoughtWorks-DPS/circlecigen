@@ -2,7 +2,7 @@ import json
 from unittest.mock import patch, mock_open
 import pytest
 import click
-from utils import merge, read_json_file, write_json_file, validate_filepath
+from src.utils import merge, read_json_file, write_json_file, validate_filepath
 
 def test_merge_non_overlapping_dict():
     dict1 = {"a": 1, "b": 2}

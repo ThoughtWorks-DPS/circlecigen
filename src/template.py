@@ -1,6 +1,6 @@
 from os.path import isfile
 from jinja2 import Environment, FileSystemLoader
-from utils import read_json_file
+from src.utils import read_json_file
 
 APPROVE_TEMPLATE="""      - approve {{role}} changes:
           type: approval

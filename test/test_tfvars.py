@@ -1,6 +1,6 @@
 import os
 import filecmp
-from tfvars import nummber_of_files_to_generate, generate_environment_tfvar_files
+from src.tfvars import nummber_of_files_to_generate, generate_environment_tfvar_files
 
 mock_envpath = "env_test"
 
