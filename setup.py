@@ -17,6 +17,11 @@ setuptools.setup(
     ],
     packages=setuptools.find_packages(),
     include_package_data=True,
+    install_requires=[
+        "click",
+        "pathvalidate",
+        "jinja2"
+    ],
     python_requires=">=3.10",
     entry_points='''
         [console_scripts]
