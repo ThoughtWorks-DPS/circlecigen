@@ -22,7 +22,7 @@ setuptools.setup(
         "pathvalidate",
         "jinja2"
     ],
-    python_requires=">=3.10",
+    python_requires=">=3.7",
     entry_points='''
         [console_scripts]
         circlecigen=src.circlecigen:cli
