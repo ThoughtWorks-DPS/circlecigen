@@ -86,7 +86,7 @@ jobs:
           name: unit test
           command: |
             sudo pip install -r requirements.txt
-            PYTHONPATH=.:./src coverage run -m pytest -vv -l
+            coverage run -m pytest -vv -l
             coverage xml --omit='src/test*'
             coverage report
       - run:
@@ -113,7 +113,7 @@ jobs:
           name: Build
           command: |
             sudo pip install -r requirements.txt
-            PYTHONPATH=.:./src python -m build
+            python -m build
       - run:
           name: upload to test.pypi
           command: python -m twine upload --repository testpypi dist/*
