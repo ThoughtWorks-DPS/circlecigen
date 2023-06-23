@@ -55,5 +55,5 @@ def test_circlecigen_with_missing_pipeline_argument():
 
 def test_circlecigen_with_test_env_values():
   runner = CliRunner()
-  result = runner.invoke(cli, ["release", "--envpath", "env_test", "--pipepath", "env_test"])
+  result = runner.invoke(cli, ["release", "--envpath", "env_test", "--pipepath", "env_test", "--template", "env_test"])
   assert "4 tfvars created in env_test/" in result.output
