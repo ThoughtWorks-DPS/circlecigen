@@ -86,6 +86,11 @@ def generate_pre_approval_jobs(f, envpath, pre, pipeline, role, priorapprovalreq
                 })
             approvalrequiredjobs += f"\n            - plan {instance} change"
             f.write(pre.render(instance_vars))
+
+        if priorapprovalrequired:
+            for prior_role_instance in pipeline[priorapprovalrequired].keys():
+                approvalrequiredjobs += f"\n            - apply {prior_role_instance} change plan"
+
         return approvalrequiredjobs
     return None
 

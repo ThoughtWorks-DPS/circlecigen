@@ -150,6 +150,8 @@ workflows:
           requires:
             - plan prod-us-west-2 change
             - plan prod-us-east-2 change
+            - apply nonprod-us-west-2 change plan
+            - apply nonprod-us-east-2 change plan
           filters: *on-tag-main
 
       - terraform/apply:
