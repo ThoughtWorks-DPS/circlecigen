@@ -58,7 +58,6 @@ def generate_config(use_pipeline, pipepath, outfile, envpath, environs, workflow
 
             if custom:
                 generate_custom_jobs(f, envpath, custom, pipeline, role)
-                continue
             else:
                 # when the approval template is generated, it must be populated with
                 # a list of all instances for which a pre-approval template will be
