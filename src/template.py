@@ -151,10 +151,10 @@ def generate_config_lines(pipepath):
 
 
 def _read_until_jobs_or_workflows(f):
-    """Generator that reads lines from file object f until it encounters a line starting with 'jobs:' or 'workflows:'"""
+    """Generator that reads lines from file object f until it encounters a line starting with 'workflows:'"""
     for line in f:
         # initially, 
-        if line.startswith("jobs:") or line.startswith("workflows:"):
+        if line.startswith("workflows:"):
             break
         yield line
 

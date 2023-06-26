@@ -56,6 +56,26 @@ commands:
           command: bash scripts/write_cluster_credentials.sh << parameters.region >>
 
 
+jobs:
+
+  launch-dynamic-pipeline:
+    parameters:
+      workflow-name:
+        description: Custom name for the resulting workflow within the generated_config.yml
+        type: string
+      multi-config:
+        description: name of the multi-environment definition/configuration file to use
+        type: string
+        default: multi.json
+    executor: continuation/default
+    steps:
+      - checkout
+      - run:
+          name: generate continuation pipeline
+          command: circlecigen --workflow << parameters.workflow-name >>
+      - continuation/continue:
+          configuration_path: .circleci/generated_config.yml
+
 
 workflows:
   version: 2

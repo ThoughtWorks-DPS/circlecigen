@@ -457,6 +457,22 @@ commands:
     steps:
       ...
 
+jobs:
+
+  my-pre-deploy-jobs:
+    parameters:
+      ...
+    docker:
+      - image: ...
+    steps:
+      - setup-commands:
+          parameters: << parameters... >>
+      - static-code-test-commands:
+          parameters: << parameters... >>
+
+  launch-dynamic-pipeline:
+    parameters:
+      ...
 
 workflows:
   version: 2
@@ -702,6 +718,22 @@ commands:
     steps:
       ...
 
+jobs:
+
+  my-pre-deploy-jobs:
+    parameters:
+      ...
+    docker:
+      - image: ...
+    steps:
+      - setup-commands:
+          parameters: << parameters... >>
+      - static-code-test-commands:
+          parameters: << parameters... >>
+
+  launch-dynamic-pipeline:
+    parameters:
+      ...
 
 workflows:
   version: 2
