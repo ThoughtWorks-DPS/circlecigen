@@ -1,0 +1,100 @@
+---
+version: 2.1
+
+
+orbs:
+  terraform: twdps/terraform@0.6.0
+
+# =================== global config
+
+globals:
+ - &context di-DR-lab
+
+on-push-main: &on-push-main
+  branches:
+    only: /main/
+  tags:
+    ignore: /.*/
+
+# ===================================
+
+commands:
+
+  set-environment:
+    description: generate environment credentials and configuration from templates
+    parameters:
+      cluster:
+        description: cluster name to use for configuration
+        type: string
+      source-env:
+        description: .env file to source into BASH_ENV
+        type: string
+    steps:
+      - op/env:
+          env-file: << parameters.source-env >>
+      - run:
+          name: set ~/.terraformrc
+          command: op inject -i tpl/terraformrc.tpl -o ~/.terraformrc
+      - run:
+          name: set << parameters.cluster >> environment variables
+          command: |
+            op inject -i environments/<< parameters.cluster >>.auto.tfvars.json.tpl -o << parameters.cluster >>.auto.tfvars.json
+
+  store-system-credentials:
+    parameters:
+      region:
+        type: string
+    steps:
+      - run:
+          name: install teller
+          command: |
+            wget https://github.com/tellerops/teller/releases/download/v1.5.6/teller_1.5.6_Linux_x86_64.tar.gz
+            sudo tar -xvf teller_1.5.6_Linux_x86_64.tar.gz
+            sudo mv teller /usr/local/bin/.
+      - run:
+          name: write cluster kubeconfig to secrets store
+          command: bash scripts/write_cluster_credentials.sh << parameters.region >>
+
+
+
+workflows:
+  version: 2
+
+  continuation-generated-workflow:
+    jobs:
+      - integration-tests:
+          name: nonprod-us-west-2 integration test
+          context: << pipeline.parameters.context >>
+          shell: << pipeline.parameters.shell-options >>
+          executor-image: << pipeline.parameters.executor-image >>
+          instance_name: nonprod-us-west-2
+          workspace: nonprod-us-west-2
+          filters: *on-tag-main
+
+      - integration-tests:
+          name: nonprod-us-east-2 integration test
+          context: << pipeline.parameters.context >>
+          shell: << pipeline.parameters.shell-options >>
+          executor-image: << pipeline.parameters.executor-image >>
+          instance_name: nonprod-us-east-2
+          workspace: nonprod-us-east-2
+          filters: *on-tag-main
+
+      - integration-tests:
+          name: prod-us-west-2 integration test
+          context: << pipeline.parameters.context >>
+          shell: << pipeline.parameters.shell-options >>
+          executor-image: << pipeline.parameters.executor-image >>
+          instance_name: prod-us-west-2
+          workspace: prod-us-west-2
+          filters: *on-tag-main
+
+      - integration-tests:
+          name: prod-us-east-2 integration test
+          context: << pipeline.parameters.context >>
+          shell: << pipeline.parameters.shell-options >>
+          executor-image: << pipeline.parameters.executor-image >>
+          instance_name: prod-us-east-2
+          workspace: prod-us-east-2
+          filters: *on-tag-main
+

@@ -1,0 +1,10 @@
+      - integration-tests:
+          name: {{env_instance}} integration test
+          context: << pipeline.parameters.context >>
+          shell: << pipeline.parameters.shell-options >>
+          executor-image: << pipeline.parameters.executor-image >>
+          instance_name: {{env_instance}}
+          workspace: {{env_instance}}
+          filters: {{filters}}
+
+

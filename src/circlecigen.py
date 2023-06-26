@@ -64,7 +64,7 @@ def cli(pipeline, outfile, envpath, multifile, defaultparams, tfvars, workflow, 
     """
     validate_filepath(envpath, "envpath")
     validate_filepath(pipepath, "pipepath")
-    validate_filepath(template, "template")
+    validate_filepath(f"{pipepath}/{template}", "template")
 
     if tfvars:
         result = generate_environment_tfvar_files(pipeline, envpath,
@@ -73,9 +73,11 @@ def cli(pipeline, outfile, envpath, multifile, defaultparams, tfvars, workflow, 
         click.echo(f"{result} tfvars created in {envpath}/")
     else:
         click.echo("Not generating tfvars.json files")
-    generate_config(pipeline, 
+    generate_config(pipeline,
                     pipepath,
                     outfile,
                     envpath,
                     read_json_file(envpath, multifile),
-                    workflow)
+                    workflow,
+                    template
+                    )
