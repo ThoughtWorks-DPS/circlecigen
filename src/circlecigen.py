@@ -18,7 +18,7 @@ from src.template import generate_config
     callback=validate_filepath_arg)
 @click.option("--template", default=None,
     help="""Custom CircleCI template file to use for generating jobs. This is optional.
-            If not provided .circleci/pre_approve.yml and .circleci/post_approve.yml will be used""",
+            If not provided, pre_approve.yml and post_approve.yml in the pipepath directory will be used""",
     callback=validate_filepath_arg)
 @click.option("--defaultparams", default="default.json",
     help="Default parameters file. Default is default.tfvars.json",
