@@ -82,3 +82,39 @@ workflows:
 
   continuation-generated-workflow:
     jobs:
+      - integration-tests:
+          name: nonprod-us-west-2 integration test
+          context: << pipeline.parameters.context >>
+          shell: << pipeline.parameters.shell-options >>
+          executor-image: << pipeline.parameters.executor-image >>
+          instance_name: nonprod-us-west-2
+          workspace: nonprod-us-west-2
+          filters: *on-tag-main
+
+      - integration-tests:
+          name: nonprod-us-east-2 integration test
+          context: << pipeline.parameters.context >>
+          shell: << pipeline.parameters.shell-options >>
+          executor-image: << pipeline.parameters.executor-image >>
+          instance_name: nonprod-us-east-2
+          workspace: nonprod-us-east-2
+          filters: *on-tag-main
+
+      - integration-tests:
+          name: prod-us-west-2 integration test
+          context: << pipeline.parameters.context >>
+          shell: << pipeline.parameters.shell-options >>
+          executor-image: << pipeline.parameters.executor-image >>
+          instance_name: prod-us-west-2
+          workspace: prod-us-west-2
+          filters: *on-tag-main
+
+      - integration-tests:
+          name: prod-us-east-2 integration test
+          context: << pipeline.parameters.context >>
+          shell: << pipeline.parameters.shell-options >>
+          executor-image: << pipeline.parameters.executor-image >>
+          instance_name: prod-us-east-2
+          workspace: prod-us-east-2
+          filters: *on-tag-main
+

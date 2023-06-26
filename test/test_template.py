@@ -54,11 +54,25 @@ def test_get_templates():
     envpath = "env_test"
     je = Environment(loader=FileSystemLoader(f"{envpath}/"))
 
-    pre, approve, post = get_templates(je, envpath)
+    pre, approve, post, custom = get_templates(je, envpath)
     
     assert isinstance(pre, Template)
     assert isinstance(post, Template)
     assert isinstance(approve, Template)
+
+
+def test_get_custom_template():
+    envpath = "env_test"
+    custom_template = "custom.yml"
+    je = Environment(loader=FileSystemLoader(f"{envpath}/"))
+
+    pre, approve, post, custom = get_templates(je, envpath, custom_template)
+
+    assert isinstance(pre, Template)
+    assert isinstance(post, Template)
+    assert isinstance(approve, Template)
+    assert isinstance(custom, Template)
+
 
 # this is as ugly as the tfvars file output tests
 def test_generate_config():
@@ -67,10 +81,27 @@ def test_generate_config():
     mock_envpath = "env_test"
     mock_outfile = "generated_config.yml"
     mock_workflow = "continuation-generated-workflow"
+    mock_template = None
 
-    generate_config(mock_pipeline, mock_pipepath, mock_outfile, mock_envpath, mock_multi, mock_workflow)
+    generate_config(mock_pipeline, mock_pipepath, mock_outfile, mock_envpath, mock_multi, mock_workflow, mock_template)
     assert os.path.isfile(os.path.join(mock_pipepath, mock_outfile))
     assert filecmp.cmp(os.path.join(mock_pipepath,
                        mock_outfile),
                        os.path.join("test",
                        mock_outfile))
+
+
+def test_generate_config_with_custom_template():
+    mock_pipeline = "release"
+    mock_pipepath = "env_test"
+    mock_envpath = "env_test"
+    mock_outfile = "template_generated_config.yml"
+    mock_workflow = "continuation-generated-workflow"
+    mock_template = "custom.yml"
+
+    generate_config(mock_pipeline, mock_pipepath, mock_outfile, mock_envpath, mock_multi, mock_workflow, mock_template)
+    assert os.path.isfile(os.path.join(mock_pipepath, mock_outfile))
+    assert filecmp.cmp(os.path.join(mock_pipepath,
+                                    mock_outfile),
+                       os.path.join("test",
+                                    mock_outfile))

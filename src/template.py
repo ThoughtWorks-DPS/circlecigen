@@ -23,7 +23,7 @@ PRIOR_APPROVAL="""
             - approve {} changes
 """
 
-def generate_config(use_pipeline, pipepath, outfile, envpath, environs, workflow):
+def generate_config(use_pipeline, pipepath, outfile, envpath, environs, workflow, template):
     """create generated_config.yaml for continuation orb"""
 
     # use the specified filter to generate a pipeline only for the desired trigger
@@ -37,7 +37,7 @@ def generate_config(use_pipeline, pipepath, outfile, envpath, environs, workflow
 
     # setup the jinja templates
     je = Environment(loader=FileSystemLoader(f"{pipepath}/"), autoescape=True)
-    pre, approve, post = get_templates(je, pipepath)
+    pre, approve, post, custom = get_templates(je, pipepath, template)
 
     # setup Dict for the approval job template 
     approve_vars = {}
@@ -56,17 +56,21 @@ def generate_config(use_pipeline, pipepath, outfile, envpath, environs, workflow
             if role == "filter":
                 continue
 
-            # when the approval template is generate, it must be populated with
-            # a list of all instances for which a pre-approval template is
-            # generated. That is returned by this job.
-            approvalrequiredjobs = generate_pre_approval_jobs(f, envpath, pre, pipeline, role, priorapprovalrequired)
+            if custom:
+                generate_custom_jobs(f, envpath, custom, pipeline, role)
+                continue
+            else:
+                # when the approval template is generated, it must be populated with
+                # a list of all instances for which a pre-approval template will be
+                # generated. That is returned by this job.
+                approvalrequiredjobs = generate_pre_approval_jobs(f, envpath, pre, pipeline, role, priorapprovalrequired)
 
-            # generate approval job for the current role, a human will trigger the post- phase
-            generate_approval_jobs(f, approve, approve_vars, approvalrequiredjobs, role)
-            generate_post_approval_jobs(f, envpath, post, pipeline, role)
+                # generate approval job for the current role, a human will trigger the post- phase
+                generate_approval_jobs(f, approve, approve_vars, approvalrequiredjobs, role)
+                generate_post_approval_jobs(f, envpath, post, pipeline, role)
 
-            # record the current role, to provide 'requires:' list in any subsequent pre- jobs
-            priorapprovalrequired = role
+                # record the current role, to provide 'requires:' list in any subsequent pre- jobs
+                priorapprovalrequired = role
 
 def generate_pre_approval_jobs(f, envpath, pre, pipeline, role, priorapprovalrequired):
     # generate a pre-approval job for each instance in the role,
@@ -114,12 +118,28 @@ def generate_post_approval_jobs(f, envpath, post, pipeline, role):
             })
             f.write(post.render(instance_vars))
 
-def get_templates(je, pipepath):
+
+def generate_custom_jobs(f, envpath, custom, pipeline, role):
+    # generate a custom job for each instance in the role,
+    # if a custom template file (specified by the --template flag) exists
+    for instance in pipeline[role]:
+        instance_vars=read_json_file(envpath, f"{instance}.tfvars.json")
+        instance_vars.update({
+            "filters": pipeline["filter"],
+            "role": role,
+            "envpath": envpath
+        })
+        f.write(custom.render(instance_vars))
+
+
+def get_templates(je, pipepath, template=None):
     """setup the jinja templates"""
     pre = je.get_template("pre-approve.yml") if isfile(f"{pipepath}/pre-approve.yml") else 0
     post = je.get_template("post-approve.yml") if isfile(f"{pipepath}/post-approve.yml") else 0
+    custom = je.get_template(f"{template}") if isfile(f"{pipepath}/{template}") else 0
     approve = je.from_string(APPROVE_TEMPLATE)
-    return pre, approve, post
+    return pre, approve, post, custom
+
 
 def generate_config_lines(pipepath):
     """Read config.yml and yield lines that don't start with 'setup:' until it encounters a line starting with 'jobs:' or 'workflows:'"""
@@ -131,10 +151,10 @@ def generate_config_lines(pipepath):
 
 
 def _read_until_jobs_or_workflows(f):
-    """Generator that reads lines from file object f until it encounters a line starting with 'jobs:' or 'workflows:'"""
+    """Generator that reads lines from file object f until it encounters a line starting with 'workflows:'"""
     for line in f:
         # initially, 
-        if line.startswith("jobs:") or line.startswith("workflows:"):
+        if line.startswith("workflows:"):
             break
         yield line
 

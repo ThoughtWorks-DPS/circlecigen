@@ -16,6 +16,10 @@ from src.template import generate_config
 @click.option("--multifile", default="multi.json",
     help="Multi-environment config file. Default is multi.json",
     callback=validate_filepath_arg)
+@click.option("--template", default=None,
+    help="""Custom CircleCI template file to use for generating jobs. This is optional.
+            If not provided, pre_approve.yml and post_approve.yml in the pipepath directory will be used""",
+    callback=validate_filepath_arg)
 @click.option("--defaultparams", default="default.json",
     help="Default parameters file. Default is default.tfvars.json",
     callback=validate_filepath_arg)
@@ -28,13 +32,14 @@ from src.template import generate_config
     help="Override default config.yml location for testing",
     callback=validate_filepath_arg)
 @click.argument('pipeline', nargs=1)
-def cli(pipeline, outfile, envpath, multifile, defaultparams, tfvars, workflow, pipepath):
+def cli(pipeline, outfile, envpath, multifile, defaultparams, tfvars, workflow, pipepath, template):
     """
 
     Inputs 
 
       .circleci/pre_approve.yml
       .circleci/post_approve.yml
+      .circleci/custom_template.yml (optional)
 
       environments/
 
@@ -59,6 +64,7 @@ def cli(pipeline, outfile, envpath, multifile, defaultparams, tfvars, workflow, 
     """
     validate_filepath(envpath, "envpath")
     validate_filepath(pipepath, "pipepath")
+    validate_filepath(f"{pipepath}/{template}", "template")
 
     if tfvars:
         result = generate_environment_tfvar_files(pipeline, envpath,
@@ -67,9 +73,11 @@ def cli(pipeline, outfile, envpath, multifile, defaultparams, tfvars, workflow, 
         click.echo(f"{result} tfvars created in {envpath}/")
     else:
         click.echo("Not generating tfvars.json files")
-    generate_config(pipeline, 
+    generate_config(pipeline,
                     pipepath,
                     outfile,
                     envpath,
                     read_json_file(envpath, multifile),
-                    workflow)
+                    workflow,
+                    template
+                    )

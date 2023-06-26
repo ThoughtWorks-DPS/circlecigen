@@ -37,7 +37,10 @@ For all instances of each desired Role, circlecigen will generate a deployment p
 * an approval step, followed by
 * a post-approve job for each instance
 
-#### Setup example for a terraform EKS pipeline
+Optionally, a custom template of a CircleCI workflow job can be defined and circlecigen will generate a deployment pipeline with jobs for all the instances running in parallel.
+
+### Setup Examples
+#### 1. Setup example for a terraform EKS pipeline
 
 Let's stay with the EKS example mentioned above. Assume that Production requires six (6) clusters in six different regions, Nonproduction likewise requires cluster in each of the same six regions, and an additional three clusters spanning nearby global localities are required to support the software-defined lifecycle of this infrastructure. Therefore we have three environment Roles: infra-dev role that is deployed on git-push, and the nonprod and prod roles that release consequtively upon git-tag.  
 
@@ -454,6 +457,22 @@ commands:
     steps:
       ...
 
+jobs:
+
+  my-pre-deploy-jobs:
+    parameters:
+      ...
+    docker:
+      - image: ...
+    steps:
+      - setup-commands:
+          parameters: << parameters... >>
+      - static-code-test-commands:
+          parameters: << parameters... >>
+
+  launch-dynamic-pipeline:
+    parameters:
+      ...
 
 workflows:
   version: 2
@@ -641,4 +660,119 @@ workflows:
           name: apply nonprod-ap-southwest-1 change plan
           ...
           filters: *on-tag-main
+```
+
+#### 2. Setup example for a job to run nightly integration tests
+
+In this example we start by setting up the `environments/multi.json` and `environments/default.json` as from before. We also set up any relevant role-specific overrides, and the CircleCI config file (`.circleci/config.yml`) as from before.
+
+We then create a custom template file which will be specified with the `--template` flag. Let's use the example below:
+```yaml
+      - integration-tests:
+          name: {{env_instance}} integration test
+          context: << pipeline.parameters.context >>
+          shell: << pipeline.parameters.shell-options >>
+          executor-image: << pipeline.parameters.executor-image >>
+          instance_name: {{env_instance}}
+          workspace: {{env_instance}}
+          filters: {{filters}}
+```
+
+The resulting pipeline from using the above custom template would then look like the following:
+```yaml
+---
+version: 2.1
+
+orbs:
+  continuation: circleci/continuation@0.3.1
+
+on-push-main: &on-push-main
+  branches:
+    only: /main/
+  tags:
+    ignore: /.*/
+
+commands:
+
+  setup-commands:
+    parameters:
+      ...
+    steps:
+      ...
+
+  static-code-test-commands:
+    parameters:
+      ...
+    steps:
+      ...
+
+  before-instance-specific-parallel-job-commands:
+    parameters:
+      ...
+    steps:
+      ...
+
+  after-instance-specific-parallel-job-commands:
+    parameters:
+      ...
+    steps:
+      ...
+
+jobs:
+
+  my-pre-deploy-jobs:
+    parameters:
+      ...
+    docker:
+      - image: ...
+    steps:
+      - setup-commands:
+          parameters: << parameters... >>
+      - static-code-test-commands:
+          parameters: << parameters... >>
+
+  launch-dynamic-pipeline:
+    parameters:
+      ...
+
+workflows:
+  version: 2
+
+  release-pipeline:
+    jobs:
+      - integration-tests:
+          name: nonprod-us-west-2 integration test
+          context: << pipeline.parameters.context >>
+          shell: << pipeline.parameters.shell-options >>
+          executor-image: << pipeline.parameters.executor-image >>
+          instance_name: nonprod-us-west-2
+          workspace: nonprod-us-west-2
+          filters: *on-push-main
+
+      - integration-tests:
+          name: nonprod-us-east-2 integration test
+          context: << pipeline.parameters.context >>
+          shell: << pipeline.parameters.shell-options >>
+          executor-image: << pipeline.parameters.executor-image >>
+          instance_name: nonprod-us-east-2
+          workspace: nonprod-us-east-2
+          filters: *on-push-main
+
+      - integration-tests:
+          name: prod-us-west-2 integration test
+          context: << pipeline.parameters.context >>
+          shell: << pipeline.parameters.shell-options >>
+          executor-image: << pipeline.parameters.executor-image >>
+          instance_name: prod-us-west-2
+          workspace: prod-us-west-2
+          filters: *on-push-main
+
+      - integration-tests:
+          name: prod-us-east-2 integration test
+          context: << pipeline.parameters.context >>
+          shell: << pipeline.parameters.shell-options >>
+          executor-image: << pipeline.parameters.executor-image >>
+          instance_name: prod-us-east-2
+          workspace: prod-us-east-2
+          filters: *on-push-main
 ```

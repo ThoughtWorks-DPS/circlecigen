@@ -43,6 +43,12 @@ def test_circlecigen_with_invalid_pipepath_name():
   assert result.exit_code == 2
   assert "Invalid value for '--pipepath'" in result.output
 
+def test_circlecigen_with_invalid_template_name():
+  runner = CliRunner()
+  result = runner.invoke(cli, ['sandbox', '--template', 'invalid:template'])
+  assert result.exit_code == 2
+  assert "Invalid value for '--template'" in result.output
+
 def test_circlecigen_help():
   runner = CliRunner()
   result = runner.invoke(cli, ["--help"])
@@ -55,5 +61,5 @@ def test_circlecigen_with_missing_pipeline_argument():
 
 def test_circlecigen_with_test_env_values():
   runner = CliRunner()
-  result = runner.invoke(cli, ["release", "--envpath", "env_test", "--pipepath", "env_test"])
+  result = runner.invoke(cli, ["release", "--envpath", "env_test", "--pipepath", "env_test", "--template", "custom.yml"])
   assert "4 tfvars created in env_test/" in result.output
