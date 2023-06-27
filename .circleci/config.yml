@@ -97,7 +97,7 @@ jobs:
       - run:
           name: cve scan
           command: |
-            pipenv update
+            # pipenv update
             snyk test
 
   build package and integration test:
