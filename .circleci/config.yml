@@ -97,8 +97,7 @@ jobs:
       - run:
           name: cve scan
           command: |
-            # pipenv update
-            snyk test
+            snyk test --package-manager=pip --file=requirements.txt
 
   build package and integration test:
     executor: python-builder
