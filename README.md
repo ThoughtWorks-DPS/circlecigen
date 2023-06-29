@@ -262,14 +262,14 @@ Of course you must have the regular circleci pipeline file that responds to trig
 
 **.circleci/pre-approve.yml**  
 
-This file is a template that will be populate with instance specific info when the pipeline is generated from within the config.yml pipeline. All values in the env_instance.tfvars.json configuration are avaliable to be used in the jinja template. Keep in mind that the same yaml template is used for each role so it will not work to have a value that ONLY exists in a single instance or role if the value appears in the yaml template.    
+This file is a template that will be populate with instance specific info when the pipeline is generated from within the config.yml pipeline. All values in the instance_name.tfvars.json configuration are avaliable to be used in the jinja template. Keep in mind that the same yaml template is used for each role so it will not work to have a value that ONLY exists in a single instance or role if the value appears in the yaml template.
 
 ```yaml
       - terraform/plan:
-          name: {{env_instance}} change plan
+          name: {{instance_name}} change plan
           context: << pipeline.parameters.context >>
-          workspace: {{env_instance}}
-          var-file: {{envpath}}/{{env_instance}}.tfvars.json
+          workspace: {{instance_name}}
+          var-file: {{envpath}}/{{instance_name}}.tfvars.json
           before-terraform:
             - set-environment
           filters: {{filters}}{{priorapprovalrequired}}
@@ -284,10 +284,10 @@ So, for the infra-dev role, circlecigen will create a workflow that runs a terra
 Then specify the job to be run if the above plans are approved.  
 ```yaml
       - terraform/apply:
-          name: apply {{env_instance}} change plan
+          name: apply {{instance_name}} change plan
           context: << pipeline.parameters.context >>
-          workspace: {{env_instance}}
-          var-file: {{envpath}}/{{env_instance}}.tfvars.json
+          workspace: {{instance_name}}
+          var-file: {{envpath}}/{{instance_name}}.tfvars.json
           before-terraform:
             - set-environment
           after-terraform:
@@ -669,12 +669,12 @@ In this example we start by setting up the `environments/multi.json` and `enviro
 We then create a custom template file which will be specified with the `--template` flag. Let's use the example below:
 ```yaml
       - integration-tests:
-          name: {{env_instance}} integration test
+          name: {{instance_name}} integration test
           context: << pipeline.parameters.context >>
           shell: << pipeline.parameters.shell-options >>
           executor-image: << pipeline.parameters.executor-image >>
-          instance_name: {{env_instance}}
-          workspace: {{env_instance}}
+          instance_name: {{instance_name}}
+          workspace: {{instance_name}}
           filters: {{filters}}
 ```
 

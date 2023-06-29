@@ -34,9 +34,9 @@ def generate_environment_tfvar_files(use_pipeline, envpath, environs, defaultpar
             # merge any instance overrides in muilti.json into instance dict, intended to overwrite conflicts out of multi.json
             instance_vars = merge(instance_vars, pipeline[role][instance])
 
-            # set the env_instance to the current instance
+            # set the instance_name to the current instance
             instance_vars.update({
-                "env_instance": instance
+                "instance_name": instance
             })
             write_json_file(f"{envpath}/{instance}.tfvars.json", instance_vars)
     return nummber_of_files_to_generate(pipeline)

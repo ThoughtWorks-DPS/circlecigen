@@ -1,16 +1,16 @@
       - terraform/apply:
-          name: apply {{env_instance}} change plan
+          name: apply {{instance_name}} change plan
           context: *context
-          workspace: {{env_instance}}
-          var-file: {{envpath}}/{{env_instance}}.tfvars.json
+          workspace: {{instance_name}}
+          var-file: {{envpath}}/{{instance_name}}.tfvars.json
           before-terraform:
             - set-environment
           after-terraform:
             - store-system-credentials:
-                region: {{env_instance}}
+                region: {{instance_name}}
             - create-storage-class:
-                region-file: {{env_instance}}
-                workspace: {{env_instance}}
+                region-file: {{instance_name}}
+                workspace: {{instance_name}}
           requires:
             - approve {{role}} changes
           filters: {{filters}}

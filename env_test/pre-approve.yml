@@ -1,8 +1,8 @@
       - terraform/plan:
-          name: {{env_instance}} change plan
+          name: {{instance_name}} change plan
           context: *context
-          workspace: {{env_instance}}
-          var-file: {{envpath}}/{{env_instance}}.tfvars.json
+          workspace: {{instance_name}}
+          var-file: {{envpath}}/{{instance_name}}.tfvars.json
           before-terraform:
             - set-environment
           filters: {{filters}}{{priorapprovalrequired}}
