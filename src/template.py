@@ -23,7 +23,7 @@ PRIOR_APPROVAL="""
             - approve {} changes
 """
 
-def generate_config(use_pipeline, pipepath, outfile, envpath, environs, workflow, template):
+def generate_config(use_pipeline, pipepath, outfile, envpath, environs, workflow, template, roleonly):
     """create generated_config.yaml for continuation orb"""
 
     # use the specified filter to generate a pipeline only for the desired trigger
@@ -48,7 +48,6 @@ def generate_config(use_pipeline, pipepath, outfile, envpath, environs, workflow
     # with the list of all instance plans jobs in the role
     priorapprovalrequired = ""
     approvalrequiredjobs = ""
-
     # open the outfile for appeand and start processing roles/instances
     with open(f"{pipepath}/{outfile}", 'a', encoding="utf-8") as f:
         for role in pipeline:
@@ -62,37 +61,52 @@ def generate_config(use_pipeline, pipepath, outfile, envpath, environs, workflow
                 # when the approval template is generated, it must be populated with
                 # a list of all instances for which a pre-approval template will be
                 # generated. That is returned by this job.
-                approvalrequiredjobs = generate_pre_approval_jobs(f, envpath, pre, pipeline, role, priorapprovalrequired)
+                approvalrequiredjobs = generate_pre_approval_jobs(f, envpath, pre, pipeline, role, roleonly, priorapprovalrequired)
 
                 # generate approval job for the current role, a human will trigger the post- phase
                 generate_approval_jobs(f, approve, approve_vars, approvalrequiredjobs, role)
-                generate_post_approval_jobs(f, envpath, post, pipeline, role)
+                generate_post_approval_jobs(f, envpath, post, pipeline, role, roleonly)
 
                 # record the current role, to provide 'requires:' list in any subsequent pre- jobs
                 priorapprovalrequired = role
 
-def generate_pre_approval_jobs(f, envpath, pre, pipeline, role, priorapprovalrequired):
-    # generate a pre-approval job for each instance in the role,
+def generate_pre_approval_jobs(f, envpath, pre, pipeline, role, roleonly, priorapprovalrequired):
+    # generate a pre-approval job for each instance in the role, or for each role if roleonly
     # if a pre-approval.yml file exists
     if pre:
         approvalrequiredjobs = "requires:"
-        for instance in pipeline[role]:
-            instance_vars=read_json_file(envpath, f"{instance}.tfvars.json")
-            instance_vars.update({
+        if roleonly:
+            role_vars=read_json_file(envpath, "versions.json")
+            role_vars.update({
                 "filters": pipeline["filter"],
                 "role": role,
                 "envpath": envpath
             })
             if priorapprovalrequired:
-                instance_vars.update({
+                role_vars.update({
                     "priorapprovalrequired": PRIOR_APPROVAL.format(priorapprovalrequired)
                 })
-            approvalrequiredjobs += f"\n            - plan {instance} change"
-            f.write(pre.render(instance_vars))
+            approvalrequiredjobs += f"\n            - plan {role} change"
+            f.write(pre.render(role_vars))
+        else:
+            for instance in pipeline[role]:
+                instance_vars=read_json_file(envpath, f"{instance}.tfvars.json")
+                instance_vars.update({
+                    "filters": pipeline["filter"],
+                    "role": role,
+                    "envpath": envpath
+                })
+                if priorapprovalrequired:
+                    instance_vars.update({
+                        "priorapprovalrequired": PRIOR_APPROVAL.format(priorapprovalrequired)
+                    })
+                approvalrequiredjobs += f"\n            - plan {instance} change"
+                f.write(pre.render(instance_vars))
 
         if priorapprovalrequired:
-            for prior_role_instance in pipeline[priorapprovalrequired].keys():
-                approvalrequiredjobs += f"\n            - apply {prior_role_instance} change plan"
+            if not roleonly:
+                for prior_role_instance in pipeline[priorapprovalrequired].keys():
+                    approvalrequiredjobs += f"\n            - apply {prior_role_instance} change plan"
 
         return approvalrequiredjobs
     return None
@@ -104,18 +118,27 @@ def generate_approval_jobs(f, approve, approve_vars, approvalrequiredjobs, role)
     })
     f.write(approve.render(approve_vars))
 
-def generate_post_approval_jobs(f, envpath, post, pipeline, role):
+def generate_post_approval_jobs(f, envpath, post, pipeline, role, roleonly):
     # generate a post-approval job for each instance in the role,
     # if a post-approval.yml file exists
     if post:
-        for instance in pipeline[role]:
-            instance_vars=read_json_file(envpath, f"{instance}.tfvars.json")
-            instance_vars.update({
+        if roleonly:
+            role_vars=read_json_file(envpath, "versions.json")
+            role_vars.update({
                 "filters": pipeline["filter"],
                 "role": role,
                 "envpath": envpath
             })
-            f.write(post.render(instance_vars))
+            f.write(post.render(role_vars))
+        else:
+            for instance in pipeline[role]:
+                instance_vars=read_json_file(envpath, f"{instance}.tfvars.json")
+                instance_vars.update({
+                    "filters": pipeline["filter"],
+                    "role": role,
+                    "envpath": envpath
+                })
+                f.write(post.render(instance_vars))
 
 
 def generate_custom_jobs(f, envpath, custom, pipeline, role):
