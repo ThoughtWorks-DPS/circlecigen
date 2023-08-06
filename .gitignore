@@ -11,3 +11,4 @@ htmlcov
 Pipfile.lock
 environments/
 build
+.python-version
