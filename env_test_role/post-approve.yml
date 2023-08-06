@@ -1,0 +1,9 @@
+      - deploy-app-version:
+          name: deploy {{role}} core app version change\
+          context: *context
+          role: {{role}}
+          requires:
+            - approve {{role}} changes
+          filters: {{filters}}
+
+

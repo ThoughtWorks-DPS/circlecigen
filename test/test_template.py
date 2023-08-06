@@ -82,8 +82,9 @@ def test_generate_config():
     mock_outfile = "generated_config.yml"
     mock_workflow = "continuation-generated-workflow"
     mock_template = None
+    mock_roleonly = False
 
-    generate_config(mock_pipeline, mock_pipepath, mock_outfile, mock_envpath, mock_multi, mock_workflow, mock_template)
+    generate_config(mock_pipeline, mock_pipepath, mock_outfile, mock_envpath, mock_multi, mock_workflow, mock_template, mock_roleonly)
     assert os.path.isfile(os.path.join(mock_pipepath, mock_outfile))
     assert filecmp.cmp(os.path.join(mock_pipepath,
                        mock_outfile),
@@ -98,8 +99,25 @@ def test_generate_config_with_custom_template():
     mock_outfile = "template_generated_config.yml"
     mock_workflow = "continuation-generated-workflow"
     mock_template = "custom.yml"
+    mock_roleonly = False
 
-    generate_config(mock_pipeline, mock_pipepath, mock_outfile, mock_envpath, mock_multi, mock_workflow, mock_template)
+    generate_config(mock_pipeline, mock_pipepath, mock_outfile, mock_envpath, mock_multi, mock_workflow, mock_template, mock_roleonly)
+    assert os.path.isfile(os.path.join(mock_pipepath, mock_outfile))
+    assert filecmp.cmp(os.path.join(mock_pipepath,
+                                    mock_outfile),
+                       os.path.join("test",
+                                    mock_outfile))
+
+def test_generate_config_with_roleonly():
+    mock_pipeline = "release"
+    mock_pipepath = "env_test_role"
+    mock_envpath = "env_test_role"
+    mock_outfile = "role_generated_config.yml"
+    mock_workflow = "continuation-generated-workflow"
+    mock_template = "custom.yml"
+    mock_roleonly = True
+
+    generate_config(mock_pipeline, mock_pipepath, mock_outfile, mock_envpath, mock_multi, mock_workflow, mock_template, mock_roleonly)
     assert os.path.isfile(os.path.join(mock_pipepath, mock_outfile))
     assert filecmp.cmp(os.path.join(mock_pipepath,
                                     mock_outfile),

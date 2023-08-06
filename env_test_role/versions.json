@@ -1,0 +1,12 @@
+{
+  "core-apps": {
+    "aws-load-balancer-controller": {
+      "type": "helm",
+      "version": "1.5.3"
+    },
+    "metrics-server": {
+      "type": "helm",
+      "version": "1.5.3"
+    }
+  }
+}

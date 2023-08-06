@@ -1,0 +1,7 @@
+      - validate-app-values-file:
+          name: plan {{role}} changes
+          context: *context
+          role: {{role}}
+          filters: {{filters}}{{priorapprovalrequired}}
+
+
