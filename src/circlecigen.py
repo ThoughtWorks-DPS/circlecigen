@@ -31,8 +31,10 @@ from src.template import generate_config
 @click.option("--pipepath", default=".circleci",
     help="Override default config.yml location for testing",
     callback=validate_filepath_arg)
+@click.option("--roleonly", default=True,
+    help="Generate pipeline for role only workflow. Default is false")
 @click.argument('pipeline', nargs=1)
-def cli(pipeline, outfile, envpath, multifile, defaultparams, tfvars, workflow, pipepath, template):
+def cli(pipeline, outfile, envpath, multifile, defaultparams, tfvars, workflow, pipepath, template, roleonly):
     """
 
     Inputs 
@@ -79,5 +81,6 @@ def cli(pipeline, outfile, envpath, multifile, defaultparams, tfvars, workflow, 
                     envpath,
                     read_json_file(envpath, multifile),
                     workflow,
-                    template
+                    template,
+                    roleonly
                     )
